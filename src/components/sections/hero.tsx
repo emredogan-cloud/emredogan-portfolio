@@ -22,7 +22,7 @@ import { hero } from '@/content/hero';
  */
 export function Hero() {
   return (
-    <Section id="home" labelledBy="home-heading" variant="hero">
+    <Section id="home" labelledBy="home-heading" variant="hero" glow="left-blue">
       <div className="container-content">
         <div className="grid items-center gap-14 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:gap-16">
           <div>

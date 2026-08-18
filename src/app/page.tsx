@@ -1,4 +1,5 @@
 import { Hero } from '@/components/sections/hero';
+import { TechMarquee } from '@/components/sections/tech-marquee';
 import { Section } from '@/components/layout/section';
 import { Button } from '@/components/ui/button';
 import { Pill } from '@/components/ui/pill';
@@ -20,7 +21,9 @@ export default function HomePage() {
     <main id="content">
       <Hero />
 
-      <Section id="about" labelledBy="about-heading">
+      <TechMarquee />
+
+      <Section id="about" labelledBy="about-heading" glow="left-blue">
         <div className="container-content">
           <Reveal>
             <SectionHeading
@@ -34,7 +37,7 @@ export default function HomePage() {
         </div>
       </Section>
 
-      <Section id="work" labelledBy="work-heading">
+      <Section id="work" labelledBy="work-heading" glow="right-cyan">
         <div className="container-content">
           <Reveal>
             <SectionHeading
@@ -55,7 +58,7 @@ export default function HomePage() {
         </div>
       </Section>
 
-      <Section id="contact" labelledBy="contact-heading">
+      <Section id="contact" labelledBy="contact-heading" glow="center-blue">
         <div className="container-content">
           <Reveal>
             <SectionHeading

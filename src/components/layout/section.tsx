@@ -13,9 +13,28 @@ interface SectionProps {
    * emitted later would silently win.
    */
   variant?: 'default' | 'hero';
+  /**
+   * A soft radial wash anchored to one side of the section.
+   *
+   * The reference cuts flat between sections; this hands each one a faint
+   * colour of its own so the page reads as a sequence rather than a stack.
+   * Purely decorative, `aria-hidden`, and painted below the content — it never
+   * sits between the reader and the text.
+   */
+  glow?: 'none' | 'left-blue' | 'right-cyan' | 'center-blue';
   children: React.ReactNode;
   className?: string;
 }
+
+const GLOWS = {
+  none: null,
+  'left-blue':
+    'radial-gradient(48rem 34rem at 6% 24%, color-mix(in oklab, var(--color-brand-blue) 15%, transparent), transparent 68%)',
+  'right-cyan':
+    'radial-gradient(46rem 32rem at 94% 72%, color-mix(in oklab, var(--color-brand-cyan) 12%, transparent), transparent 66%)',
+  'center-blue':
+    'radial-gradient(52rem 30rem at 50% 8%, color-mix(in oklab, var(--color-brand-blue) 12%, transparent), transparent 70%)',
+} as const;
 
 const padding = {
   default: 'pt-[clamp(3.5rem,7vw,6rem)] pb-[clamp(4rem,10vw,8rem)]',
@@ -41,11 +60,24 @@ export function Section({
   id,
   labelledBy,
   variant = 'default',
+  glow = 'none',
   children,
   className,
 }: SectionProps) {
+  const wash = GLOWS[glow];
   return (
-    <section id={id} aria-labelledby={labelledBy} className={cn(padding[variant], className)}>
+    <section
+      id={id}
+      aria-labelledby={labelledBy}
+      className={cn('relative', padding[variant], className)}
+    >
+      {wash ? (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 -z-[1]"
+          style={{ background: wash }}
+        />
+      ) : null}
       {children}
     </section>
   );

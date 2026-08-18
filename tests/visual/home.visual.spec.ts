@@ -17,6 +17,7 @@ import { prepareForSnapshot } from '../support/scan';
  */
 const REGIONS = [
   { name: 'hero', selector: '#home' },
+  { name: 'stack', selector: 'section[aria-labelledby="stack-heading"]' },
   { name: 'about', selector: '#about' },
   { name: 'work', selector: '#work' },
   { name: 'contact', selector: '#contact' },
