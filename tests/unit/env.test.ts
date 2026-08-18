@@ -11,3 +11,12 @@ describe('environment contract', () => {
     expect(env.CONTACT_TO_EMAIL).toContain('@');
   });
 });
+
+describe('analytics switch', () => {
+  it('is off unless explicitly enabled', async () => {
+    const { analyticsEnabled } = await import('@/lib/env');
+    // The test environment sets no flag, so this must be false — proving the
+    // default is "off" rather than "on unless proven otherwise".
+    expect(analyticsEnabled).toBe(false);
+  });
+});

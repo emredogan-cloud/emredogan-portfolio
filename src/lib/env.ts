@@ -12,6 +12,13 @@ const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   /** Canonical origin, no trailing slash. Drives metadata, sitemap and JSON-LD. */
   NEXT_PUBLIC_SITE_URL: z.string().url().default('https://emredogan.work'),
+  /**
+   * Explicit analytics switch. Set to '1' only in the Vercel Production
+   * environment. Deliberately not inferred from `process.env.VERCEL`: whether
+   * Vercel's system variables reach a build depends on a per-project setting,
+   * and a silently-disabled analytics integration is worse than none.
+   */
+  NEXT_PUBLIC_ENABLE_ANALYTICS: z.enum(['0', '1']).default('0'),
   /** Transactional email for the contact form. Absent → mailto fallback. */
   RESEND_API_KEY: z.string().min(1).optional(),
   CONTACT_TO_EMAIL: z.string().email().default('emre30283@gmail.com'),
@@ -20,6 +27,7 @@ const schema = z.object({
 const parsed = schema.safeParse({
   NODE_ENV: process.env.NODE_ENV,
   NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+  NEXT_PUBLIC_ENABLE_ANALYTICS: process.env.NEXT_PUBLIC_ENABLE_ANALYTICS,
   RESEND_API_KEY: process.env.RESEND_API_KEY,
   CONTACT_TO_EMAIL: process.env.CONTACT_TO_EMAIL,
 });
@@ -30,3 +38,6 @@ if (!parsed.success) {
 }
 
 export const env = parsed.data;
+
+/** True only where analytics is explicitly switched on. */
+export const analyticsEnabled = env.NEXT_PUBLIC_ENABLE_ANALYTICS === '1';

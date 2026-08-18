@@ -43,23 +43,34 @@ justification `WORKING_DISCIPLINE.md` §7.2 demands.
 
 ---
 
-## ADR-0005 — Gate Vercel Analytics on the platform runtime
+## ADR-0005 — Gate analytics on an explicit flag, not a platform sniff
 
-**Date:** 2026-08-18 · **Phase:** 1 · **Status:** accepted
+**Date:** 2026-08-18 · **Phase:** 1 · **Status:** accepted (revised same day)
 
 **Context.** `@vercel/analytics` and `@vercel/speed-insights` load their scripts
 from `/_vercel/*`, which only exists on Vercel's infrastructure. Under
 `next start` locally or in CI they 404 and the browser logs a MIME-type error,
 which broke the "no console errors" E2E test.
 
-**Decision.** `components/layout/analytics.tsx` returns `null` unless
-`process.env.VERCEL === '1'`.
+The first attempt gated on `process.env.VERCEL === '1'`. Browser verification of
+the production deployment showed **no insights script in the DOM at all** —
+the gate was closed on Vercel too. Whether Vercel injects its system variables
+into a build is a per-project setting, so the sniff was reading a value that
+may simply not be there. A silently-disabled analytics integration is worse
+than no integration, because nobody notices.
 
-**Alternatives.** Allowlisting the error in the test — rejected: it would blind
-the test to real console errors, which is the only thing it exists to catch.
+**Decision.** An explicit `NEXT_PUBLIC_ENABLE_ANALYTICS` variable, validated by
+the env schema, defaulting to `'0'`, and set to `'1'` only in the Vercel
+Production environment.
 
-**Consequence.** Analytics reports only from real deployments, which is the
-only place the numbers would have meant anything.
+**Alternatives.** Allowlisting the console error in the test — rejected: it
+would blind the test to real console errors, the only thing it exists to catch.
+Inferring from `NEXT_PUBLIC_SITE_URL` — rejected: that variable also defaults
+to the production origin locally, so it would re-break local runs.
+
+**Consequence.** The switch is greppable, unit-tested, environment-scoped, and
+doubles as a kill switch. Verified in a browser against the production
+deployment rather than assumed.
 
 ---
 

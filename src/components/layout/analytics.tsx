@@ -1,18 +1,26 @@
 import { Analytics as VercelAnalytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
+import { analyticsEnabled } from '@/lib/env';
 
 /**
- * Analytics is only mounted when the app is actually running on Vercel.
+ * Analytics is mounted only where `NEXT_PUBLIC_ENABLE_ANALYTICS=1`.
  *
- * Both scripts are served by the platform at `/_vercel/*`, so anywhere else —
- * `next start` locally, CI, a self-hosted preview — they resolve to a 404 and
- * the browser logs a MIME-type error. Gating on `process.env.VERCEL` keeps the
- * console clean off-platform without weakening the "no console errors" test.
+ * Both scripts are served by the platform from `/_vercel/*`, so anywhere else —
+ * `next start` locally, CI, a self-hosted preview — they 404 and the browser
+ * logs a MIME-type error, which the "no console errors" E2E test correctly
+ * rejects.
  *
- * Both are privacy-conscious by default: no cookies, no cross-site identifiers.
+ * The switch is an explicit environment variable rather than a
+ * `process.env.VERCEL` sniff: whether Vercel injects its system variables into
+ * a build is a per-project setting, and this component silently rendering
+ * nothing on production was exactly that failure. An explicit flag is
+ * greppable, testable, and doubles as a kill switch.
+ *
+ * Both products are privacy-conscious by default: no cookies, no cross-site
+ * identifiers.
  */
 export function Analytics() {
-  if (process.env.VERCEL !== '1') return null;
+  if (!analyticsEnabled) return null;
 
   return (
     <>
