@@ -26,6 +26,8 @@ export interface Engine {
   setPointer(x: number | null, y: number | null): void;
   destroy(): void;
   readonly isRunning: boolean;
+  /** Frames drawn since construction. Mirrored onto `data-frame` for tests. */
+  readonly renderedFrames: number;
 }
 
 const STAR_COLOUR = '#ffffff';
@@ -70,6 +72,7 @@ export function createEngine({ staticCanvas, liveCanvas, profile, seed }: Engine
       setPointer: () => {},
       destroy: () => {},
       isRunning: false,
+      renderedFrames: 0,
     };
   }
 
@@ -82,6 +85,7 @@ export function createEngine({ staticCanvas, liveCanvas, profile, seed }: Engine
   const rng = createRng(seed ^ 0x9e3779b9);
 
   let frame = 0;
+  let renderedFrames = 0;
   let running = false;
   let lastTime = 0;
   let elapsed = 0;
@@ -214,6 +218,20 @@ export function createEngine({ staticCanvas, liveCanvas, profile, seed }: Engine
 
     stepMeteors(pool, delta, width, height);
     drawLive(elapsed);
+
+    // Publish liveness roughly twice a second.
+    //
+    // Comparing canvas pixels is the obvious way to check "is the loop
+    // running", and it does not survive contact with three engines: WebKit's
+    // `toDataURL` did not reflect changes, and on the `low` profile there are
+    // no twinkling stars, so between meteors the layer is legitimately blank.
+    // A counter answers the actual question — the loop advanced — in a way
+    // every engine agrees on. Written every 30 frames rather than every frame
+    // so the loop is not doing DOM work sixty times a second.
+    renderedFrames += 1;
+    if (renderedFrames % 30 === 0) {
+      liveCanvas.dataset['frame'] = String(renderedFrames);
+    }
   }
 
   return {
@@ -240,6 +258,9 @@ export function createEngine({ staticCanvas, liveCanvas, profile, seed }: Engine
     destroy() {
       this.stop();
       twinklers = [];
+    },
+    get renderedFrames() {
+      return renderedFrames;
     },
     get isRunning() {
       return running;

@@ -98,6 +98,22 @@ repaint. A test now asserts the property directly — the static layer must be
 byte-identical after a second of animation while the live layer must have
 changed — so the split cannot silently regress.
 
+**6. Liveness could not be measured by diffing canvas pixels.** Three engines,
+three different reasons the approach fails: WebKit's `toDataURL` did not
+reflect changes at all; on the `low` profile there are no twinkling stars, so
+between meteors the animated layer is legitimately blank and identical to
+itself; and a fixed sampling window can miss a 1.1–2.6 s spawn interval
+entirely. Two hypotheses were tested and discarded before the cause was
+found — including one, "headless WebKit reports reduced motion", that the
+failure output disproved by printing the selected profile.
+
+The engine now publishes a frame counter to `data-frame` (written every 30
+frames, so the loop is not doing DOM work sixty times a second). Tests assert
+the loop _advanced_, which every engine agrees on, instead of inferring it from
+pixels. The hidden-tab test additionally proves `requestAnimationFrame` is
+still being serviced, so a frozen counter means the engine stopped rather than
+the browser pausing everything.
+
 **5. A test slept for a fixed window instead of waiting for the event.** "The
 animated layer must be moving" sampled 900 ms apart and failed on CI. Not a
 product bug: GitHub runners report four cores, so the **`low` profile** applies

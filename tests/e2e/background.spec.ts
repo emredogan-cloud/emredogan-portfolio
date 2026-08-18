@@ -143,41 +143,64 @@ test.describe('background', () => {
 
   test('the loop stops when the tab is hidden', async ({ page }) => {
     await page.goto('/');
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(600);
 
-    const framesWhileHidden = await page.evaluate(async () => {
+    const profile = await page
+      .locator('canvas[data-background-profile]')
+      .getAttribute('data-background-profile');
+    test.skip(profile === 'static', 'nothing to stop on a still profile');
+
+    const frames = () =>
+      page.evaluate(() =>
+        Number(
+          document.querySelector<HTMLCanvasElement>('canvas[data-background-layer="live"]')
+            ?.dataset['frame'] ?? '0',
+        ),
+      );
+
+    // Confirm it is running before claiming it stopped.
+    const running = await frames();
+    await expect.poll(frames, { timeout: 5_000, intervals: [200] }).toBeGreaterThan(running);
+
+    const stillRan = await page.evaluate(async () => {
       Object.defineProperty(document, 'hidden', { configurable: true, value: true });
       document.dispatchEvent(new Event('visibilitychange'));
 
-      let frames = 0;
+      // Prove rAF itself is still being serviced, so a frozen counter means
+      // the engine stopped rather than the browser pausing everything.
+      let ownFrames = 0;
       const tick = () => {
-        frames += 1;
+        ownFrames += 1;
         handle = requestAnimationFrame(tick);
       };
       let handle = requestAnimationFrame(tick);
-      await new Promise((resolve) => setTimeout(resolve, 400));
+      await new Promise((resolve) => setTimeout(resolve, 800));
       cancelAnimationFrame(handle);
-
-      // Our own counter proves rAF still runs; the background's canvas must
-      // nonetheless be unchanged, because its loop was stopped.
-      const canvas = document.querySelector<HTMLCanvasElement>('canvas[data-background-profile]');
-      const before = canvas?.toDataURL() ?? '';
-      await new Promise((resolve) => setTimeout(resolve, 400));
-      const after = canvas?.toDataURL() ?? '';
-
-      return { rafRan: frames > 0, unchanged: before === after };
+      return ownFrames;
     });
 
-    expect(framesWhileHidden.rafRan).toBe(true);
-    expect(framesWhileHidden.unchanged).toBe(true);
+    expect(stillRan, 'requestAnimationFrame was not being serviced').toBeGreaterThan(0);
+
+    const frozen = await frames();
+    await page.waitForTimeout(600);
+    expect(await frames(), 'the loop kept running while hidden').toBe(frozen);
   });
 
-  test('the sky is painted once and never redrawn by the loop', async ({ page }) => {
-    // This is the property that took the software-rendered runner from 9 fps
-    // back to full speed: the static layer must be untouched while the
-    // animation runs.
+  test('the sky is painted once while the loop keeps running', async ({ page }) => {
+    // The property the two-canvas split exists to guarantee: the animation
+    // advances without ever repainting the sky.
+    //
+    // Liveness is read from the engine's own frame counter rather than by
+    // diffing canvas pixels. Pixel diffing does not survive three engines —
+    // WebKit's `toDataURL` did not reflect changes, and on the `low` profile
+    // there are no twinkling stars, so between meteors the animated layer is
+    // legitimately blank and identical to itself.
     await page.goto('/');
     await page.waitForTimeout(400);
+
+    const profile = await page
+      .locator('canvas[data-background-profile]')
+      .getAttribute('data-background-profile');
 
     const readStatic = () =>
       page.evaluate(
@@ -186,44 +209,31 @@ test.describe('background', () => {
             .querySelector<HTMLCanvasElement>('canvas[data-background-layer="static"]')
             ?.toDataURL() ?? '',
       );
-    const readLive = () =>
-      page.evaluate(
-        () =>
-          document
-            .querySelector<HTMLCanvasElement>('canvas[data-background-layer="live"]')
-            ?.toDataURL() ?? '',
+    const frames = () =>
+      page.evaluate(() =>
+        Number(
+          document.querySelector<HTMLCanvasElement>('canvas[data-background-layer="live"]')
+            ?.dataset['frame'] ?? '0',
+        ),
       );
 
-    const profile = await page
-      .locator('canvas[data-background-profile]')
-      .getAttribute('data-background-profile');
-
     const staticBefore = await readStatic();
-    const liveBefore = await readLive();
 
     if (profile === 'static') {
-      // Headless WebKit reports `prefers-reduced-motion: reduce`, so the still
-      // profile is selected — correctly. Asserting "the animated layer must be
-      // moving" there would be asserting that the reduced-motion contract is
-      // broken. The contract to check is the opposite one.
+      // A still profile must never advance at all.
       await page.waitForTimeout(1_500);
-      expect(await readLive(), 'a still profile must not animate').toBe(liveBefore);
+      expect(await frames(), 'a still profile must not animate').toBe(0);
     } else {
-      // Poll rather than sleep for a fixed window. On a four-core CI runner the
-      // `low` profile applies: no twinkling stars at all, and meteors arriving
-      // every 1.1–2.6 s. A short sample can legitimately catch an empty
-      // animated layer twice and report that nothing is moving.
+      const before = await frames();
       await expect
-        .poll(readLive, {
-          message: `the animated layer never changed (profile: ${profile})`,
+        .poll(frames, {
+          message: `the loop never advanced (profile: ${profile})`,
           timeout: 8_000,
-          intervals: [250],
+          intervals: [200],
         })
-        .not.toBe(liveBefore);
+        .toBeGreaterThan(before);
     }
 
-    // The property that matters either way: the sky was never repainted while
-    // all that was happening.
     expect(await readStatic(), 'the sky must not be repainted').toBe(staticBefore);
   });
 });
