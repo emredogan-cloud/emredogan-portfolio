@@ -29,13 +29,15 @@ const DEFAULT_SEED = 0x5eed_5747;
  * `?bg-static`, which is what makes visual baselines reproducible.
  */
 export function Starfield() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const staticRef = useRef<HTMLCanvasElement>(null);
+  const liveRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<Engine | null>(null);
   const [profileId, setProfileId] = useState<QualityProfile['id'] | 'pending'>('pending');
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    const staticCanvas = staticRef.current;
+    const liveCanvas = liveRef.current;
+    if (!staticCanvas || !liveCanvas) return;
 
     const params = new URLSearchParams(window.location.search);
     const seedParam = params.get('bg-seed');
@@ -47,7 +49,8 @@ export function Starfield() {
     setProfileId(profile.id);
 
     const engine = createEngine({
-      canvas,
+      staticCanvas,
+      liveCanvas,
       profile,
       seed: Number.isFinite(seed) ? seed : DEFAULT_SEED,
     });
@@ -86,11 +89,25 @@ export function Starfield() {
   }, []);
 
   return (
-    <canvas
-      ref={canvasRef}
-      aria-hidden="true"
-      data-background-profile={profileId}
-      className="pointer-events-none fixed inset-0 -z-10 h-full w-full"
-    />
+    <>
+      {/*
+        Two layers on purpose. The sky is painted once and then left alone;
+        only the second canvas is cleared and redrawn each frame. See
+        `createEngine` for the measurement that forced the split.
+      */}
+      <canvas
+        ref={staticRef}
+        aria-hidden="true"
+        data-background-layer="static"
+        className="pointer-events-none fixed inset-0 -z-10 h-full w-full"
+      />
+      <canvas
+        ref={liveRef}
+        aria-hidden="true"
+        data-background-layer="live"
+        data-background-profile={profileId}
+        className="pointer-events-none fixed inset-0 -z-10 h-full w-full"
+      />
+    </>
   );
 }

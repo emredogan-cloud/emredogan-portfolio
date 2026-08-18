@@ -11,19 +11,18 @@ import {
 import { generateStars, starCountFor, twinkleFactor, type Star } from './stars';
 
 export interface EngineOptions {
-  readonly canvas: HTMLCanvasElement;
+  /** Painted once per resize. Never touched inside the animation loop. */
+  readonly staticCanvas: HTMLCanvasElement;
+  /** Cleared and redrawn every frame. Only twinklers and meteors live here. */
+  readonly liveCanvas: HTMLCanvasElement;
   readonly profile: QualityProfile;
   readonly seed: number;
-  /** Fixes the clock so a frame is byte-identical between runs. */
-  readonly fixedTime?: number;
 }
 
 export interface Engine {
-  /** Re-reads the element size and redraws. Cheap enough for a resize observer. */
   resize(): void;
   start(): void;
   stop(): void;
-  /** Pointer position in CSS px, or null to release the parallax. */
   setPointer(x: number | null, y: number | null): void;
   destroy(): void;
   readonly isRunning: boolean;
@@ -34,23 +33,35 @@ const STAR_COLOUR = '#ffffff';
 /**
  * The background renderer.
  *
- * Three decisions carry the performance budget:
+ * **Two canvases, and that is the whole performance story.**
  *
- *  1. **The star field is rasterised once** into an offscreen canvas and
- *     blitted each frame. Thousands of `arc()` calls per frame would dominate
- *     the frame budget; one `drawImage` does not. Only the small twinkling
- *     subset is drawn live on top.
- *  2. **Meteors come from a fixed pool**, so a long session allocates nothing
- *     and the garbage collector never interrupts a frame.
- *  3. **Device pixel ratio is capped.** Above 2 the fill cost quadruples for a
- *     difference nobody can see on a starfield.
+ * The first version drew everything into one canvas: clear, blit the whole
+ * rasterised star field, then draw the handful of moving things on top. That
+ * is fine with a GPU and disastrous without one. Measured on a software-
+ * rendered runner it took the page from 44.5 fps to 9.4 — the per-frame cost
+ * was not the meteors, it was clearing and re-blitting a full-viewport bitmap
+ * sixty times a second to redraw a sky that had not changed.
  *
- * The loop is delta-timed, so a dropped frame changes nothing about where a
- * meteor is — only how smoothly it got there.
+ * So the sky does not live in the animated canvas any more. It is painted once
+ * into its own element on resize and then left completely alone; parallax moves
+ * it with a CSS transform, which is compositor work, not raster work. The
+ * animated canvas holds only the twinkling minority of stars and the live
+ * meteors, so a frame clears and draws a few dozen small shapes.
+ *
+ * The rest:
+ *
+ *  - **Meteors come from a fixed pool**, so a long session allocates nothing
+ *    and the garbage collector never interrupts a frame.
+ *  - **Device pixel ratio is capped at 2.** Above that the fill cost
+ *    quadruples for a difference nobody can see on a starfield.
+ *  - **The loop is delta-timed and clamped**, so a dropped frame changes how
+ *    smoothly a meteor moved, not where it is.
  */
-export function createEngine({ canvas, profile, seed, fixedTime }: EngineOptions): Engine {
-  const context = canvas.getContext('2d', { alpha: true });
-  if (!context) {
+export function createEngine({ staticCanvas, liveCanvas, profile, seed }: EngineOptions): Engine {
+  const staticContext = staticCanvas.getContext('2d');
+  const liveContext = liveCanvas.getContext('2d');
+
+  if (!staticContext || !liveContext) {
     // No 2D context: the CSS gradient underneath is the whole background.
     return {
       resize: () => {},
@@ -65,9 +76,7 @@ export function createEngine({ canvas, profile, seed, fixedTime }: EngineOptions
   let width = 0;
   let height = 0;
   let dpr = 1;
-  let stars: Star[] = [];
   let twinklers: Star[] = [];
-  let field: HTMLCanvasElement | null = null;
 
   const pool = createMeteorPool(profile.maxMeteors);
   const rng = createRng(seed ^ 0x9e3779b9);
@@ -83,31 +92,21 @@ export function createEngine({ canvas, profile, seed, fixedTime }: EngineOptions
   let parallaxX = 0;
   let parallaxY = 0;
 
-  function rasteriseField() {
-    if (width === 0 || height === 0) return;
-
-    const buffer = document.createElement('canvas');
-    buffer.width = Math.ceil(width * dpr);
-    buffer.height = Math.ceil(height * dpr);
-    const bufferContext = buffer.getContext('2d');
-    if (!bufferContext) return;
-
-    bufferContext.scale(dpr, dpr);
-    bufferContext.fillStyle = STAR_COLOUR;
-
+  function paintStaticField(stars: readonly Star[]) {
+    staticContext!.clearRect(0, 0, width, height);
+    staticContext!.fillStyle = STAR_COLOUR;
     for (const star of stars) {
-      if (star.phase !== null) continue; // drawn live
-      bufferContext.globalAlpha = star.alpha;
-      bufferContext.beginPath();
-      bufferContext.arc(star.x * width, star.y * height, star.radius, 0, Math.PI * 2);
-      bufferContext.fill();
+      if (star.phase !== null) continue; // drawn live instead
+      staticContext!.globalAlpha = star.alpha;
+      staticContext!.beginPath();
+      staticContext!.arc(star.x * width, star.y * height, star.radius, 0, Math.PI * 2);
+      staticContext!.fill();
     }
-
-    field = buffer;
+    staticContext!.globalAlpha = 1;
   }
 
   function resize() {
-    const rect = canvas.getBoundingClientRect();
+    const rect = liveCanvas.getBoundingClientRect();
     const nextWidth = Math.max(1, Math.round(rect.width));
     const nextHeight = Math.max(1, Math.round(rect.height));
     const nextDpr = Math.min(window.devicePixelRatio || 1, profile.maxDpr);
@@ -117,14 +116,19 @@ export function createEngine({ canvas, profile, seed, fixedTime }: EngineOptions
     height = nextHeight;
     dpr = nextDpr;
 
-    canvas.width = Math.ceil(width * dpr);
-    canvas.height = Math.ceil(height * dpr);
-    context!.setTransform(dpr, 0, 0, dpr, 0, 0);
+    for (const [canvas, context] of [
+      [staticCanvas, staticContext!],
+      [liveCanvas, liveContext!],
+    ] as const) {
+      canvas.width = Math.ceil(width * dpr);
+      canvas.height = Math.ceil(height * dpr);
+      context.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
 
-    stars = generateStars(starCountFor(width, height, profile), profile, seed);
+    const stars = generateStars(starCountFor(width, height, profile), profile, seed);
     twinklers = stars.filter((star) => star.phase !== null);
-    rasteriseField();
-    draw(0);
+    paintStaticField(stars);
+    drawLive(0);
   }
 
   function drawMeteor(meteor: Meteor) {
@@ -135,54 +139,49 @@ export function createEngine({ canvas, profile, seed, fixedTime }: EngineOptions
     const tailX = meteor.x - (meteor.vx / speed) * meteor.length;
     const tailY = meteor.y - (meteor.vy / speed) * meteor.length;
 
-    const gradient = context!.createLinearGradient(tailX, tailY, meteor.x, meteor.y);
+    const gradient = liveContext!.createLinearGradient(tailX, tailY, meteor.x, meteor.y);
     gradient.addColorStop(0, 'rgba(255,255,255,0)');
     gradient.addColorStop(1, `rgba(255,255,255,${opacity})`);
 
-    context!.save();
-    context!.strokeStyle = gradient;
-    context!.lineWidth = meteor.thickness;
-    context!.lineCap = 'round';
-    context!.beginPath();
-    context!.moveTo(tailX, tailY);
-    context!.lineTo(meteor.x, meteor.y);
-    context!.stroke();
+    liveContext!.strokeStyle = gradient;
+    liveContext!.lineWidth = meteor.thickness;
+    liveContext!.lineCap = 'round';
+    liveContext!.beginPath();
+    liveContext!.moveTo(tailX, tailY);
+    liveContext!.lineTo(meteor.x, meteor.y);
+    liveContext!.stroke();
 
     // The bright head. Cheaper and crisper than a shadowBlur on the whole line.
-    context!.globalAlpha = opacity;
-    context!.fillStyle = STAR_COLOUR;
-    context!.beginPath();
-    context!.arc(meteor.x, meteor.y, meteor.thickness * 0.85, 0, Math.PI * 2);
-    context!.fill();
-    context!.restore();
+    liveContext!.globalAlpha = opacity;
+    liveContext!.fillStyle = STAR_COLOUR;
+    liveContext!.beginPath();
+    liveContext!.arc(meteor.x, meteor.y, meteor.thickness * 0.85, 0, Math.PI * 2);
+    liveContext!.fill();
+    liveContext!.globalAlpha = 1;
   }
 
-  function draw(seconds: number) {
-    context!.clearRect(0, 0, width, height);
+  function drawLive(seconds: number) {
+    liveContext!.clearRect(0, 0, width, height);
 
-    if (field) {
-      context!.globalAlpha = 1;
-      context!.drawImage(field, parallaxX, parallaxY, width, height);
-    }
-
-    context!.fillStyle = STAR_COLOUR;
+    liveContext!.fillStyle = STAR_COLOUR;
     for (const star of twinklers) {
-      context!.globalAlpha = Math.min(1, star.alpha * twinkleFactor(star, seconds));
-      context!.beginPath();
-      context!.arc(
-        star.x * width + parallaxX,
-        star.y * height + parallaxY,
-        star.radius,
-        0,
-        Math.PI * 2,
-      );
-      context!.fill();
+      liveContext!.globalAlpha = Math.min(1, star.alpha * twinkleFactor(star, seconds));
+      liveContext!.beginPath();
+      liveContext!.arc(star.x * width, star.y * height, star.radius, 0, Math.PI * 2);
+      liveContext!.fill();
     }
+    liveContext!.globalAlpha = 1;
 
-    context!.globalAlpha = 1;
     for (const meteor of pool) {
       if (meteor.active) drawMeteor(meteor);
     }
+  }
+
+  /** Parallax is a compositor transform on both layers — never a repaint. */
+  function applyParallax() {
+    const transform = `translate3d(${parallaxX.toFixed(2)}px, ${parallaxY.toFixed(2)}px, 0)`;
+    staticCanvas.style.transform = transform;
+    liveCanvas.style.transform = transform;
   }
 
   function tick(now: number) {
@@ -197,9 +196,14 @@ export function createEngine({ canvas, profile, seed, fixedTime }: EngineOptions
     if (profile.parallax > 0) {
       const targetX = pointerX === null ? 0 : ((pointerX / width) * 2 - 1) * -profile.parallax;
       const targetY = pointerY === null ? 0 : ((pointerY / height) * 2 - 1) * -profile.parallax;
-      // Critically damped enough to feel like weight rather than lag.
-      parallaxX += (targetX - parallaxX) * 0.06;
-      parallaxY += (targetY - parallaxY) * 0.06;
+      const nextX = parallaxX + (targetX - parallaxX) * 0.06;
+      const nextY = parallaxY + (targetY - parallaxY) * 0.06;
+      // Skip the style write when the movement is sub-pixel.
+      if (Math.abs(nextX - parallaxX) > 0.01 || Math.abs(nextY - parallaxY) > 0.01) {
+        parallaxX = nextX;
+        parallaxY = nextY;
+        applyParallax();
+      }
     }
 
     spawnIn -= delta;
@@ -209,15 +213,15 @@ export function createEngine({ canvas, profile, seed, fixedTime }: EngineOptions
     }
 
     stepMeteors(pool, delta, width, height);
-    draw(elapsed);
+    drawLive(elapsed);
   }
 
   return {
     resize,
     start() {
-      if (running || !profile.animate) {
-        // The still profile still needs its single frame.
-        if (!profile.animate) draw(fixedTime ?? 0);
+      if (running) return;
+      if (!profile.animate) {
+        // The still profile keeps its single already-painted frame.
         return;
       }
       running = true;
@@ -235,8 +239,6 @@ export function createEngine({ canvas, profile, seed, fixedTime }: EngineOptions
     },
     destroy() {
       this.stop();
-      field = null;
-      stars = [];
       twinklers = [];
     },
     get isRunning() {

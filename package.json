@@ -32,7 +32,8 @@
     "knip": "knip",
     "lhci": "lhci autorun",
     "verify": "pnpm lint && pnpm typecheck && pnpm format:check && pnpm knip && pnpm test:coverage && pnpm build && pnpm size",
-    "prepare": "husky"
+    "prepare": "husky",
+    "perf": "playwright test --config=playwright.perf.config.ts"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",

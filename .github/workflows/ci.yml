@@ -146,6 +146,12 @@ jobs:
       - name: Visual regression
         if: matrix.project == 'chromium'
         run: pnpm exec playwright test --project=chromium tests/visual
+
+      # Single worker: a relative frame-budget measurement taken while other
+      # browser contexts compete for the same cores measures contention.
+      - name: Frame-budget measurement
+        if: matrix.project == 'chromium'
+        run: pnpm perf
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

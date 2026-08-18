@@ -17,6 +17,9 @@ const isCI = Boolean(process.env.CI);
 export default defineConfig({
   testDir: './tests',
   testMatch: /.*\.spec\.ts/,
+  // Timing tests live in `tests/perf` and are run separately with a single
+  // worker (`pnpm perf`); including them here would measure worker contention.
+  testIgnore: /tests\/perf\//,
   fullyParallel: true,
   forbidOnly: isCI,
   retries: isCI ? 1 : 0,

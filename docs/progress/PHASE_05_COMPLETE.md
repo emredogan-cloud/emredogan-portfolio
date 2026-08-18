@@ -81,6 +81,23 @@ viewport composites, which capture the background with the content.
 nothing was pinning the seed in tests. `prepareForSnapshot` now sets
 `?bg-seed=` and `?bg-static`, so the sky is identical on every run.
 
+**4. The background genuinely was expensive without a GPU — and only a
+correctly-framed test could show it.** Once the measurement compared the page
+against itself instead of against an absolute number, CI reported **44.5 fps
+idle → 9.4 fps animated in headless WebKit**: a 79% loss. That was not runner
+noise; it was real.
+
+The cost was not the meteors. It was clearing and re-blitting a full-viewport
+bitmap sixty times a second to redraw a sky that had not changed. Software
+rasterisation makes that dominate everything else.
+
+Split into two canvases: the sky is painted once into its own element and left
+completely alone, and only the twinkling minority plus live meteors are cleared
+and redrawn each frame. Parallax moves both with a CSS transform rather than a
+repaint. A test now asserts the property directly — the static layer must be
+byte-identical after a second of animation while the live layer must have
+changed — so the split cannot silently regress.
+
 **3. The frame-rate assertion measured the runner, not the site.** `> 40 fps`
 passed locally and failed CI at **9 fps in headless WebKit** — which delivers
 roughly that cadence whatever the page contains, GPU-less on a shared runner.
@@ -107,6 +124,10 @@ retired while its trail is still on screen.
   the pure logic it drives is unit-tested in full.
 - WebKit cannot run on this workstation (missing `libevent-2.1-7t64`); CI
   covers it on every push.
+- Timing tests live in `tests/perf` and run with a single worker
+  (`pnpm perf`, and a dedicated CI step). Measured inside the parallel suite
+  they record worker contention, not the page — the same test passed alone and
+  failed in the pack.
 - No WebGL, deliberately (ADR-0002). Canvas 2D meets the budget with 26 KB of
   headroom left for Phases 7–9.
 
