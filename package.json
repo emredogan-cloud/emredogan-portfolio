@@ -31,7 +31,8 @@
     "analyze": "ANALYZE=true next build",
     "knip": "knip",
     "lhci": "lhci autorun",
-    "verify": "pnpm lint && pnpm typecheck && pnpm format:check && pnpm knip && pnpm test:coverage && pnpm build && pnpm size"
+    "verify": "pnpm lint && pnpm typecheck && pnpm format:check && pnpm knip && pnpm test:coverage && pnpm build && pnpm size",
+    "prepare": "husky"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",
@@ -62,8 +63,10 @@
     "eslint-config-next": "16.3.1",
     "eslint-plugin-jsx-a11y": "6.10.2",
     "globals": "17.11.0",
+    "husky": "^9.1.7",
     "jsdom": "30.0.1",
     "knip": "6.32.2",
+    "lint-staged": "^17.3.0",
     "prettier": "3.9.6",
     "prettier-plugin-tailwindcss": "0.8.1",
     "tailwindcss": "4.3.3",
@@ -80,5 +83,14 @@
         "GHSA-jmr9-qjv8-65gv"
       ]
     }
+  },
+  "lint-staged": {
+    "*.{ts,tsx,mts,mjs}": [
+      "eslint --max-warnings=0 --fix",
+      "prettier --write"
+    ],
+    "*.{json,css,md,yml,yaml}": [
+      "prettier --write"
+    ]
   }
 }

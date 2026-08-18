@@ -90,7 +90,7 @@ is what "a value read from outside React that never changes" actually is.
 verify` ran `test`, not `test:coverage`, so the local loop went green while CI
 failed on thresholds twenty minutes later. Fixed on both sides: `verify` now
 runs the same command CI does, and the three new hooks are properly tested.
-Rather than writing DOM-heavy tests, the scroll-spy's *decision* was extracted
+Rather than writing DOM-heavy tests, the scroll-spy's _decision_ was extracted
 into `scroll-spy-logic.ts` as pure functions — which is where the wrong-section
 bug actually lived, and is better design regardless. `src/lib/fonts.ts` is
 excluded from coverage with a written reason: `next/font` cannot be imported

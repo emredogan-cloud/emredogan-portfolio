@@ -46,6 +46,10 @@ you left running on 3000 will not be adopted mid-run. Next reads its build once
 at boot; a stale server serving old chunk hashes produces a 500 on a script and
 a page that never hydrates, which looks like a hydration bug and is not one.
 
+A `pre-commit` hook runs `lint-staged`, which lints and formats staged files.
+It exists because "ran the formatter, then edited one more file" turned CI red
+once, and a person is not a reliable formatter.
+
 ## Commits
 
 Conventional Commits: `feat:`, `fix:`, `chore:`, `docs:`, `test:`, `perf:`,
