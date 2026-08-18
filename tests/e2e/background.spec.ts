@@ -182,9 +182,21 @@ test.describe('background', () => {
 
     const staticBefore = await readStatic();
     const liveBefore = await readLive();
-    await page.waitForTimeout(900);
 
+    // Poll rather than sleep for a fixed window. On a four-core CI runner the
+    // `low` profile applies: no twinkling stars at all, and meteors arriving
+    // every 1.1–2.6 s. A 900 ms sample can therefore legitimately catch an
+    // empty animated layer twice and report that nothing is moving.
+    await expect
+      .poll(readLive, {
+        message: 'the animated layer never changed',
+        timeout: 8_000,
+        intervals: [250],
+      })
+      .not.toBe(liveBefore);
+
+    // The property that matters: the sky was never repainted while all that
+    // was happening.
     expect(await readStatic(), 'the sky must not be repainted').toBe(staticBefore);
-    expect(await readLive(), 'the animated layer must be moving').not.toBe(liveBefore);
   });
 });

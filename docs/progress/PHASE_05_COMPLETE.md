@@ -98,6 +98,14 @@ repaint. A test now asserts the property directly — the static layer must be
 byte-identical after a second of animation while the live layer must have
 changed — so the split cannot silently regress.
 
+**5. A test slept for a fixed window instead of waiting for the event.** "The
+animated layer must be moving" sampled 900 ms apart and failed on CI. Not a
+product bug: GitHub runners report four cores, so the **`low` profile** applies
+— no twinkling stars at all, and meteors arriving every 1.1–2.6 s. A 900 ms
+sample can legitimately catch an empty canvas twice. Replaced with a poll that
+waits for the change, and reproduced the CI profile locally first
+(`hardwareConcurrency` stubbed to 4) rather than guessing at the cause.
+
 **3. The frame-rate assertion measured the runner, not the site.** `> 40 fps`
 passed locally and failed CI at **9 fps in headless WebKit** — which delivers
 roughly that cadence whatever the page contains, GPU-less on a shared runner.
