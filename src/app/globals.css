@@ -109,16 +109,20 @@
    * hidden by default, shown by JS — is a blank page, which is not a trade
    * worth making for an entrance animation.
    */
+  /*
+   * No `will-change` here, deliberately.
+   *
+   * It buys nothing — the browser already promotes an element for the duration
+   * of an `opacity`/`transform` transition — and it costs twice. It holds a
+   * compositor layer and its memory for every revealed element on the page,
+   * and it broke Chromium's beyond-viewport capture: full-page screenshots
+   * rendered every `.reveal` subtree as blank while the DOM reported them
+   * fully opaque, so the visual baselines were pictures of an empty page.
+   */
   .reveal {
     transition:
       opacity var(--duration-slow) var(--ease-out-expo),
       transform var(--duration-slow) var(--ease-out-expo);
-    will-change: opacity, transform;
-  }
-
-  .reveal:not(.reveal-hidden) {
-    /* Once revealed, stop advertising the layer to the compositor. */
-    will-change: auto;
   }
 
   .reveal-hidden {

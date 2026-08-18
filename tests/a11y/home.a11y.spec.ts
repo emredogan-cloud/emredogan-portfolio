@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { describeViolations, scan } from './scan';
+import { describeViolations, scan } from '../support/scan';
 
 test.describe('accessibility', () => {
   test('home page has zero violations', async ({ page }) => {

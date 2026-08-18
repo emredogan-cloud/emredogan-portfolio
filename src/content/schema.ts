@@ -89,9 +89,48 @@ export const projectSchema = z.object({
 export type Project = z.infer<typeof projectSchema>;
 
 /**
- * Schemas for capabilities, principles, timeline entries, proof points and
- * skill groups are added by the phases that render them (7–9) rather than
- * declared up front — an unused schema is a promise the compiler cannot keep.
+ * A number a stranger could check for themselves.
+ *
+ * `evidence` is required and `verifyUrl` is explicit-nullable rather than
+ * optional: writing a metric on this site forces a decision about where it
+ * came from, and "there is no public URL for this" has to be stated rather
+ * than left off.
+ */
+const proofPointSchema = z.object({
+  value: z.string().min(1),
+  label: z.string().min(2),
+  evidence: z.string().min(10),
+  verifyUrl: z.string().url().nullable(),
+});
+
+const heroSchema = z.object({
+  /** Small pill above the headline. */
+  badge: z.string().min(4),
+  /** Rendered plain, then in the brand gradient. */
+  headline: z.object({ lead: z.string().min(1), accent: z.string().min(1) }),
+  subhead: z.string().min(4),
+  intro: z.string().min(40),
+  /** Technologies shown as pills. Short labels only. */
+  stack: z.array(z.string().min(1)).min(3).max(8),
+  primaryCta: z.object({ label: z.string().min(2), href: z.string().min(1) }),
+  secondaryCta: z.object({ label: z.string().min(2), href: z.string().min(1) }),
+  stats: z.array(proofPointSchema).length(3),
+  /**
+   * Portrait. `null` renders the monogram plate — a deliberate placeholder,
+   * not a broken image. Swapping in a photo is a change to this field only.
+   */
+  portrait: z.object({ src: z.string().min(1), alt: z.string().min(10) }).nullable(),
+  /** The floating glass card over the portrait frame. */
+  spotlight: z.object({ label: z.string().min(2), value: z.string().min(2) }),
+});
+export type Hero = z.infer<typeof heroSchema>;
+
+export { heroSchema };
+
+/**
+ * Schemas for capabilities, principles, timeline entries and skill groups are
+ * added by the phases that render them (8–9) rather than declared up front —
+ * an unused schema is a promise the compiler cannot keep.
  */
 
 /** Parses and throws with a readable path on failure. */

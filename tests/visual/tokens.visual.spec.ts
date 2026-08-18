@@ -1,9 +1,11 @@
 import { expect, test } from '@playwright/test';
+import { prepareForSnapshot } from '../support/scan';
 
 /**
- * Baseline for the whole design system in one image. A token change that
- * alters any primitive — a radius, a surface, the CTA ramp — shows up as a
- * diff here before it reaches a real section.
+ * Design-system baseline.
+ *
+ * Captured as one element rather than a full page for the reason documented in
+ * `home.visual.spec.ts`: full-page capture drops composited subtrees.
  */
 test.describe('design system', () => {
   for (const [label, width, height] of [
@@ -12,9 +14,8 @@ test.describe('design system', () => {
   ] as const) {
     test(`token gallery — ${label}`, async ({ page }) => {
       await page.setViewportSize({ width, height });
-      await page.goto('/dev/tokens');
-      await page.waitForLoadState('networkidle');
-      await expect(page).toHaveScreenshot(`tokens-${label}.png`, { fullPage: true });
+      await prepareForSnapshot(page, '/dev/tokens');
+      await expect(page.locator('main')).toHaveScreenshot(`tokens-${label}.png`);
     });
   }
 });

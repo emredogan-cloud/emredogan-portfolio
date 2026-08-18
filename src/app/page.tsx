@@ -1,3 +1,4 @@
+import { Hero } from '@/components/sections/hero';
 import { Section } from '@/components/layout/section';
 import { Button } from '@/components/ui/button';
 import { Pill } from '@/components/ui/pill';
@@ -17,41 +18,7 @@ import { staggerDelay } from '@/lib/motion/tokens';
 export default function HomePage() {
   return (
     <main id="content">
-      <Section id="home" labelledBy="home-heading" variant="hero">
-        <div className="container-content">
-          <p className="font-mono text-[length:var(--text-eyebrow)] tracking-[0.18em] text-[var(--color-text-faint)] uppercase">
-            {site.location} · {site.timezone}
-          </p>
-
-          <h1 id="home-heading" className="mt-6 text-[length:var(--text-h1)]">
-            {site.name.split(' ')[0]}{' '}
-            <span className="text-gradient-brand">{site.name.split(' ').slice(1).join(' ')}</span>
-          </h1>
-
-          <p className="mt-3 text-[length:var(--text-h3)] font-semibold text-[var(--color-text-strong)]">
-            {site.role}
-          </p>
-
-          <p className="mt-6 max-w-2xl text-[length:var(--text-lead)] text-[var(--color-text-body)]">
-            {site.tagline}
-          </p>
-
-          <ul className="mt-8 flex flex-wrap gap-2" aria-label="Focus areas">
-            {site.descriptors.map((descriptor) => (
-              <li key={descriptor}>
-                <Pill>{descriptor}</Pill>
-              </li>
-            ))}
-          </ul>
-
-          <div className="mt-10 flex flex-wrap items-center gap-3">
-            <Button href="/#work">View work</Button>
-            <Button href="/#contact" variant="secondary">
-              Get in touch
-            </Button>
-          </div>
-        </div>
-      </Section>
+      <Hero />
 
       <Section id="about" labelledBy="about-heading">
         <div className="container-content">

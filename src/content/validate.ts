@@ -1,6 +1,7 @@
 import 'server-only';
 
-import { parseContent, projectSchema, siteSchema } from './schema';
+import { heroSchema, parseContent, projectSchema, siteSchema } from './schema';
+import { hero } from './hero';
 import { projects } from './projects';
 import { site } from './site';
 
@@ -17,6 +18,7 @@ import { site } from './site';
  * enough to gate the build. `app/layout.tsx` does.
  */
 parseContent(siteSchema, site, 'site');
+parseContent(heroSchema, hero, 'hero');
 
 projects.forEach((project, index) => {
   parseContent(projectSchema, project, `projects[${index}]`);

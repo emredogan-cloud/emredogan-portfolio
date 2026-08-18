@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { describeViolations, scan } from './scan';
+import { describeViolations, scan } from '../support/scan';
 
 /**
  * Every primitive in one place, scanned in every state the gallery renders —
