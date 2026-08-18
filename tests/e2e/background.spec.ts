@@ -13,6 +13,20 @@ test.describe('background', () => {
     await expect(page).toHaveURL(/#work$/);
   });
 
+  test('reports the profile it selected, so a test can assert the right contract', async ({
+    page,
+  }) => {
+    // Which profile applies depends on the machine, and headless engines
+    // differ — WebKit reports `prefers-reduced-motion: reduce` on CI and
+    // correctly gets the still field. Publishing the decision lets other tests
+    // branch on it instead of assuming one environment.
+    await page.goto('/');
+    await expect(page.locator('canvas[data-background-profile]')).toHaveAttribute(
+      'data-background-profile',
+      /^(static|low|standard|high)$/,
+    );
+  });
+
   test('renders stars rather than an empty canvas', async ({ page }) => {
     await page.goto('/');
     await page.waitForTimeout(400);
@@ -180,23 +194,36 @@ test.describe('background', () => {
             ?.toDataURL() ?? '',
       );
 
+    const profile = await page
+      .locator('canvas[data-background-profile]')
+      .getAttribute('data-background-profile');
+
     const staticBefore = await readStatic();
     const liveBefore = await readLive();
 
-    // Poll rather than sleep for a fixed window. On a four-core CI runner the
-    // `low` profile applies: no twinkling stars at all, and meteors arriving
-    // every 1.1–2.6 s. A 900 ms sample can therefore legitimately catch an
-    // empty animated layer twice and report that nothing is moving.
-    await expect
-      .poll(readLive, {
-        message: 'the animated layer never changed',
-        timeout: 8_000,
-        intervals: [250],
-      })
-      .not.toBe(liveBefore);
+    if (profile === 'static') {
+      // Headless WebKit reports `prefers-reduced-motion: reduce`, so the still
+      // profile is selected — correctly. Asserting "the animated layer must be
+      // moving" there would be asserting that the reduced-motion contract is
+      // broken. The contract to check is the opposite one.
+      await page.waitForTimeout(1_500);
+      expect(await readLive(), 'a still profile must not animate').toBe(liveBefore);
+    } else {
+      // Poll rather than sleep for a fixed window. On a four-core CI runner the
+      // `low` profile applies: no twinkling stars at all, and meteors arriving
+      // every 1.1–2.6 s. A short sample can legitimately catch an empty
+      // animated layer twice and report that nothing is moving.
+      await expect
+        .poll(readLive, {
+          message: `the animated layer never changed (profile: ${profile})`,
+          timeout: 8_000,
+          intervals: [250],
+        })
+        .not.toBe(liveBefore);
+    }
 
-    // The property that matters: the sky was never repainted while all that
-    // was happening.
+    // The property that matters either way: the sky was never repainted while
+    // all that was happening.
     expect(await readStatic(), 'the sky must not be repainted').toBe(staticBefore);
   });
 });
