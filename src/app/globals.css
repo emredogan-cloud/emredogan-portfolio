@@ -60,6 +60,33 @@
 
 @layer components {
   /*
+   * The always-present sky.
+   *
+   * Sits below the canvas and is never removed, so the page has depth even
+   * with JavaScript disabled or without a 2D context. The two radial pools
+   * echo the reference's section glows — cool blue high on the left, teal low
+   * on the right — and give the flat black something to sit on.
+   */
+  .background-gradient {
+    position: fixed;
+    inset: 0;
+    z-index: -20;
+    pointer-events: none;
+    background:
+      radial-gradient(
+        90rem 60rem at 12% -8%,
+        color-mix(in oklab, var(--color-brand-blue) 13%, transparent),
+        transparent 62%
+      ),
+      radial-gradient(
+        70rem 55rem at 92% 108%,
+        color-mix(in oklab, var(--color-brand-cyan) 9%, transparent),
+        transparent 60%
+      ),
+      var(--color-void);
+  }
+
+  /*
    * Reading-progress bar.
    *
    * The native path uses a scroll-driven animation timeline, which the

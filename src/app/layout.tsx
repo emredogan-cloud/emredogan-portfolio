@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { Background } from '@/components/background/background';
 import { Analytics } from '@/components/layout/analytics';
 import { Footer } from '@/components/layout/footer';
 import { Header } from '@/components/layout/header';
@@ -63,6 +64,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={fontVariables} suppressHydrationWarning>
       <body id="top" className="min-h-dvh antialiased">
         <SkipLink />
+        <Background />
         <ScrollProgress />
         <Header />
         {children}

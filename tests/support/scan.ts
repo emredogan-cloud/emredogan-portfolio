@@ -101,7 +101,14 @@ export function describeViolations(
  */
 export async function prepareForSnapshot(page: Page, url: string): Promise<void> {
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.goto(url);
+
+  // Pin the star field. Without a fixed seed the background differs on every
+  // run and every baseline is a false positive; `bg-static` additionally stops
+  // the clock so meteors cannot drift between the capture and the comparison.
+  const target = new URL(url, 'http://127.0.0.1');
+  target.searchParams.set('bg-seed', '20260818');
+  target.searchParams.set('bg-static', '1');
+  await page.goto(`${target.pathname}${target.search}`);
   await page.waitForLoadState('networkidle');
   await settlePage(page);
 }

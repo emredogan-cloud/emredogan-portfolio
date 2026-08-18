@@ -58,3 +58,27 @@ test.describe('navigation island', () => {
     await expect(page.locator('header')).toHaveScreenshot('nav-island.png');
   });
 });
+
+/**
+ * Viewport composites.
+ *
+ * Region baselines capture an element's own box, which excludes the fixed
+ * background canvas sitting behind everything at `z-index: -10` — so a
+ * regression that blanked the sky entirely would not show up in any of them.
+ * These capture the visible viewport instead, background included.
+ *
+ * Viewport capture rather than `fullPage`: full-page stitching drops
+ * composited subtrees (see the note at the top of this file).
+ */
+test.describe('composite', () => {
+  for (const [label, width, height] of [
+    ['desktop', 1440, 900],
+    ['mobile', 390, 844],
+  ] as const) {
+    test(`first viewport with the background — ${label}`, async ({ page }) => {
+      await page.setViewportSize({ width, height });
+      await prepareForSnapshot(page, '/');
+      await expect(page).toHaveScreenshot(`viewport-${label}.png`);
+    });
+  }
+});
