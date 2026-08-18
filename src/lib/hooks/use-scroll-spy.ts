@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { readingLineRootMargin, resolveActiveSection } from './scroll-spy-logic';
 
 /**
  * Distance below the viewport top treated as "the line you are reading".
@@ -42,17 +43,10 @@ export function useScrollSpy(sectionIds: readonly string[]): string | null {
     const resolve = () => {
       const atBottom =
         window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
-      if (atBottom) {
-        setActiveId(sectionIds.at(-1) ?? null);
-        return;
-      }
-      const topmost = sectionIds.find((id) => visible.has(id));
-      if (topmost) setActiveId(topmost);
+      setActiveId((previous) =>
+        resolveActiveSection({ order: sectionIds, crossing: visible, atBottom, previous }),
+      );
     };
-
-    // Collapses the observer root to a single line `READING_LINE` px from the
-    // viewport top, so exactly one contiguous section can ever contain it.
-    const belowLine = Math.max(0, window.innerHeight - READING_LINE - 1);
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -62,7 +56,7 @@ export function useScrollSpy(sectionIds: readonly string[]): string | null {
         }
         resolve();
       },
-      { rootMargin: `-${READING_LINE}px 0px -${belowLine}px 0px`, threshold: 0 },
+      { rootMargin: readingLineRootMargin(window.innerHeight, READING_LINE), threshold: 0 },
     );
 
     for (const element of elements) observer.observe(element);

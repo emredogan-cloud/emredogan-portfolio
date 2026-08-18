@@ -41,8 +41,8 @@ an unnamed `<section>` is not exposed as a landmark at all.
 ## Tests
 
 39 Playwright tests on Chromium (18 navigation, plus E2E, reveal,
-reduced-motion, a11y and visual), 71 unit tests. axe: 0 violations. Budget:
-10.7 / 45 KB first-party.
+reduced-motion, a11y and visual), **95 unit tests**. axe: 0 violations. Budget:
+10.7 / 45 KB first-party. Coverage 85.7 / 89.4 / 81.3 / 87.9.
 
 New: island state change, `aria-current` exclusivity, anchor landing position,
 deep-link landing, keyboard traversal, focus containment, body-scroll lock and
@@ -86,7 +86,18 @@ won. Replaced with an explicit `variant` prop.
 `react-hooks/set-state-in-effect`. Rewritten as `useSyncExternalStore`, which
 is what "a value read from outside React that never changes" actually is.
 
-**6. Two lost hours to a stale server.** Playwright's `reuseExistingServer`
+**6. The coverage gate caught untested hooks — after CI went red.** `pnpm
+verify` ran `test`, not `test:coverage`, so the local loop went green while CI
+failed on thresholds twenty minutes later. Fixed on both sides: `verify` now
+runs the same command CI does, and the three new hooks are properly tested.
+Rather than writing DOM-heavy tests, the scroll-spy's *decision* was extracted
+into `scroll-spy-logic.ts` as pure functions — which is where the wrong-section
+bug actually lived, and is better design regardless. `src/lib/fonts.ts` is
+excluded from coverage with a written reason: `next/font` cannot be imported
+outside the Next build, and its real contract is covered by a source-diff unit
+test and a browser measurement.
+
+**7. Two lost hours to a stale server.** Playwright's `reuseExistingServer`
 adopted a hand-started `pnpm start` from an earlier build. Next reads its build
 once at boot, so it served chunk hashes that no longer existed: a 500 on a
 script, no hydration, and failures that looked exactly like hydration bugs.

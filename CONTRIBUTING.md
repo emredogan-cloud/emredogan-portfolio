@@ -28,11 +28,15 @@ Read it before touching anything. What follows is the short operational version.
 ## Before you commit
 
 ```bash
-pnpm verify     # lint → typecheck → test → build
+pnpm verify     # lint → typecheck → format → knip → coverage → build → budget
 pnpm e2e
 pnpm a11y
 pnpm visual
 ```
+
+`pnpm verify` runs `test:coverage`, not `test`, because that is what CI runs.
+A plain `pnpm test` passes happily while coverage thresholds fail, which is a
+green light that turns red twenty minutes later on a runner.
 
 Then open the page in a real browser and look at it. Automated tests do not
 catch bad spacing.
