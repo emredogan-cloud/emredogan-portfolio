@@ -68,9 +68,24 @@ would blind the test to real console errors, the only thing it exists to catch.
 Inferring from `NEXT_PUBLIC_SITE_URL` — rejected: that variable also defaults
 to the production origin locally, so it would re-break local runs.
 
+**And then it still did not work.** With the flag set, the production
+deployment _still_ rendered nothing. Root cause: `vercel env add` had stored
+`NEXT_PUBLIC_ENABLE_ANALYTICS` as a **Sensitive** variable. Vercel's sensitive
+variables are runtime-only and are never exposed to the build — but a
+`NEXT_PUBLIC_*` value has to exist at build time to be inlined, and this page
+is statically prerendered. So the variable was present in the dashboard,
+correct in value, and invisible to the code that read it.
+
+Re-added with `--no-sensitive` (a public variable being marked sensitive was
+wrong on its own terms) and redeployed. `window.va` and `window.si` are now
+functions on production and both platform scripts load.
+
 **Consequence.** The switch is greppable, unit-tested, environment-scoped, and
-doubles as a kill switch. Verified in a browser against the production
-deployment rather than assumed.
+doubles as a kill switch. Two separate silent failures were caught only because
+the deployment was opened in a real browser and inspected — neither would have
+failed a test, and neither produced an error anywhere. Public variables are
+non-sensitive by policy in this project; `CONTACT_TO_EMAIL` and future secrets
+stay sensitive.
 
 ---
 
