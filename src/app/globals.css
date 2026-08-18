@@ -1,0 +1,107 @@
+@import 'tailwindcss';
+@import '../styles/tokens.css';
+
+/* Dark is the only theme this site has; declare it so form controls,
+   scrollbars and the UA default surface all agree. */
+:root {
+  color-scheme: dark;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-hairline);
+  }
+
+  html {
+    scroll-behavior: smooth;
+    /* The floating header must never cover an anchored section heading. */
+    scroll-padding-top: 6.5rem;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-void);
+    color: var(--color-text-body);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    color: var(--color-text-strong);
+    font-weight: 700;
+    letter-spacing: -0.022em;
+    line-height: 1.1;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-brand-cyan);
+    outline-offset: 3px;
+    border-radius: var(--radius-xs);
+  }
+
+  /* Numerals in stats and metrics must not jitter as they animate. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+  }
+}
+
+@layer utilities {
+  .container-content {
+    width: 100%;
+    max-width: var(--container-content);
+    margin-inline: auto;
+    padding-inline: clamp(1.25rem, 4vw, 2.5rem);
+  }
+
+  /* The signature two-tone heading from the reference: plain word + gradient
+     word. Applied to the accent span only, never to a whole heading, so the
+     accessible text stays selectable and high-contrast. */
+  .text-gradient-brand {
+    background-image: linear-gradient(
+      100deg,
+      var(--color-brand-blue-bright) 0%,
+      var(--color-brand-cyan-bright) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Windows High Contrast / forced-colors kills background-clip:text and the
+     word would vanish. Fall back to a solid system colour. */
+  @media (forced-colors: active) {
+    .text-gradient-brand {
+      background-image: none;
+      color: LinkText;
+      -webkit-text-fill-color: LinkText;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
