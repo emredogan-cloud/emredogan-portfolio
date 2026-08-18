@@ -81,7 +81,17 @@ viewport composites, which capture the background with the content.
 nothing was pinning the seed in tests. `prepareForSnapshot` now sets
 `?bg-seed=` and `?bg-static`, so the sky is identical on every run.
 
-**3. A meteor test depended on the seed for its premise.** "Does a random
+**3. The frame-rate assertion measured the runner, not the site.** `> 40 fps`
+passed locally and failed CI at **9 fps in headless WebKit** — which delivers
+roughly that cadence whatever the page contains, GPU-less on a shared runner.
+An absolute floor was the wrong assertion. Replaced with a _relative_ one: the
+same page is measured twice, once animated and once with `?bg-static` (a single
+frame, then idle), so the runner cancels out and what remains is the share of
+the frame budget this code actually consumes. It must retain ≥85%, and no
+single frame may exceed 50 ms — the strict half, and the one that catches a
+real regression.
+
+**4. A meteor test depended on the seed for its premise.** "Does a random
 meteor exit the viewport before its lifetime ends?" is a question about the
 seed, not about the code. Rewritten to construct a meteor with known values,
 plus a second test asserting the opposite edge — that a meteor is _not_
@@ -95,9 +105,8 @@ retired while its trail is still on screen.
   implements no 2D context, so a unit test would exercise a mock rather than
   the drawing code. Its contract is asserted in a real browser instead, and all
   the pure logic it drives is unit-tested in full.
-- Frame-rate assertions run on shared CI runners, so the floor is set where a
-  genuine regression fails but runner noise does not. The zero-long-frames
-  assertion is the strict one.
+- WebKit cannot run on this workstation (missing `libevent-2.1-7t64`); CI
+  covers it on every push.
 - No WebGL, deliberately (ADR-0002). Canvas 2D meets the budget with 26 KB of
   headroom left for Phases 7–9.
 
