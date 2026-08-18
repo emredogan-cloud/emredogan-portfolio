@@ -42,7 +42,8 @@ interface CommonProps {
 }
 
 type ButtonProps = CommonProps & React.ButtonHTMLAttributes<HTMLButtonElement> & { href?: never };
-type LinkProps = CommonProps & { href: string };
+type LinkProps = CommonProps &
+  Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, 'href'> & { href: string };
 
 function content(children: React.ReactNode, external?: boolean) {
   return (

@@ -60,6 +60,46 @@
 
 @layer components {
   /*
+   * Reading-progress bar.
+   *
+   * The native path uses a scroll-driven animation timeline, which the
+   * compositor runs without any main-thread work. The fallback reads a custom
+   * property set from rAF. Both scale a single element on the X axis — neither
+   * ever changes width, which would trigger layout on every frame.
+   */
+  .scroll-progress {
+    position: fixed;
+    inset-block-start: 0;
+    inset-inline: 0;
+    z-index: 50;
+    height: 2px;
+    transform-origin: 0 50%;
+    background: linear-gradient(
+      90deg,
+      var(--color-brand-blue-bright),
+      var(--color-brand-cyan-bright)
+    );
+    transform: scaleX(var(--scroll-progress, 0));
+    pointer-events: none;
+  }
+
+  @supports (animation-timeline: scroll()) {
+    .scroll-progress[data-scroll-timeline='native'] {
+      animation: scroll-progress-grow linear both;
+      animation-timeline: scroll(root block);
+    }
+  }
+
+  @keyframes scroll-progress-grow {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+
+  /*
    * Scroll reveal.
    *
    * The resting state is *visible*. `.reveal-hidden` is added by script only

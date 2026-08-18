@@ -1,6 +1,16 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const PORT = Number(process.env.PORT ?? 3000);
+/**
+ * Tests run on their own port.
+ *
+ * Sharing 3000 with a hand-started `pnpm start` is a trap: Next reads the
+ * build once at boot, so a server left running from an earlier build keeps
+ * serving stale chunks while `reuseExistingServer` happily adopts it. The
+ * symptom is a 500 on a hashed chunk and a page that never hydrates, which
+ * looks exactly like a hydration bug and is not one. A dedicated port makes
+ * that collision impossible.
+ */
+const PORT = Number(process.env.PLAYWRIGHT_PORT ?? 3100);
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? `http://127.0.0.1:${PORT}`;
 const isCI = Boolean(process.env.CI);
 
@@ -37,7 +47,7 @@ export default defineConfig({
   webServer: process.env.PLAYWRIGHT_BASE_URL
     ? undefined
     : {
-        command: 'pnpm build && pnpm start',
+        command: `pnpm build && pnpm start --port ${PORT}`,
         url: baseURL,
         reuseExistingServer: !isCI,
         timeout: 180_000,

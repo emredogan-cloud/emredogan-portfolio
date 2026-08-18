@@ -37,6 +37,11 @@ pnpm visual
 Then open the page in a real browser and look at it. Automated tests do not
 catch bad spacing.
 
+Playwright builds and serves on **port 3100**, so a `pnpm dev` or `pnpm start`
+you left running on 3000 will not be adopted mid-run. Next reads its build once
+at boot; a stale server serving old chunk hashes produces a 500 on a script and
+a page that never hydrates, which looks like a hydration bug and is not one.
+
 ## Commits
 
 Conventional Commits: `feat:`, `fix:`, `chore:`, `docs:`, `test:`, `perf:`,

@@ -1,67 +1,109 @@
-import Link from 'next/link';
+import { Section } from '@/components/layout/section';
+import { Button } from '@/components/ui/button';
+import { Pill } from '@/components/ui/pill';
+import { Reveal } from '@/components/ui/reveal';
+import { SectionHeading } from '@/components/ui/section-heading';
 import { site } from '@/content/site';
+import { staggerDelay } from '@/lib/motion/tokens';
 
 /**
- * Phase 1 surface.
+ * The single-page experience.
  *
- * Deliberately minimal: the objective of Phase 1 is a complete engineering
- * foundation, not a visual build. What ships here is real — real identity,
- * real links, real typography and colour tokens — so nothing on the page is a
- * claim that has to be retracted later. The full experience lands in Phases
- * 3–9 (ROADMAP §16).
+ * Section shells land in Phase 3 so the navigation, scroll-spy and anchor
+ * behaviour can be built and tested against real targets. The contents of each
+ * arrive in Phases 4 and 7–9; what is here is real, not placeholder copy that
+ * would have to be retracted.
  */
 export default function HomePage() {
   return (
-    <main id="content" className="relative flex min-h-dvh flex-col justify-center py-24">
-      <div className="container-content">
-        <p className="font-mono text-[length:var(--text-eyebrow)] tracking-[0.18em] text-[var(--color-text-faint)] uppercase">
-          {site.location} · {site.timezone}
-        </p>
+    <main id="content">
+      <Section id="home" labelledBy="home-heading" variant="hero">
+        <div className="container-content">
+          <p className="font-mono text-[length:var(--text-eyebrow)] tracking-[0.18em] text-[var(--color-text-faint)] uppercase">
+            {site.location} · {site.timezone}
+          </p>
 
-        <h1 className="mt-6 text-[length:var(--text-h1)]">
-          {site.name.split(' ')[0]}{' '}
-          <span className="text-gradient-brand">{site.name.split(' ').slice(1).join(' ')}</span>
-        </h1>
+          <h1 id="home-heading" className="mt-6 text-[length:var(--text-h1)]">
+            {site.name.split(' ')[0]}{' '}
+            <span className="text-gradient-brand">{site.name.split(' ').slice(1).join(' ')}</span>
+          </h1>
 
-        <p className="mt-3 text-[length:var(--text-h3)] font-semibold text-[var(--color-text-strong)]">
-          {site.role}
-        </p>
+          <p className="mt-3 text-[length:var(--text-h3)] font-semibold text-[var(--color-text-strong)]">
+            {site.role}
+          </p>
 
-        <p className="mt-6 max-w-2xl text-[length:var(--text-lead)] text-[var(--color-text-body)]">
-          {site.tagline}
-        </p>
+          <p className="mt-6 max-w-2xl text-[length:var(--text-lead)] text-[var(--color-text-body)]">
+            {site.tagline}
+          </p>
 
-        <ul className="mt-8 flex flex-wrap gap-2" aria-label="Focus areas">
-          {site.descriptors.map((d) => (
-            <li
-              key={d}
-              className="rounded-[var(--radius-pill)] border border-[var(--color-hairline)] bg-[var(--color-surface-3)] px-4 py-1.5 text-sm text-[var(--color-text-body)]"
-            >
-              {d}
-            </li>
-          ))}
-        </ul>
+          <ul className="mt-8 flex flex-wrap gap-2" aria-label="Focus areas">
+            {site.descriptors.map((descriptor) => (
+              <li key={descriptor}>
+                <Pill>{descriptor}</Pill>
+              </li>
+            ))}
+          </ul>
 
-        <nav className="mt-10 flex flex-wrap items-center gap-3" aria-label="Contact and profiles">
-          {site.socials.map((s) => (
-            <Link
-              key={s.label}
-              href={s.href}
-              className="rounded-[var(--radius-md)] border border-[var(--color-hairline)] bg-[var(--color-surface-2)] px-4 py-2.5 text-sm font-medium text-[var(--color-text-strong)] transition-colors duration-[var(--duration-fast)] hover:border-[var(--color-hairline-strong)] hover:bg-[var(--color-surface-3)]"
-              {...(s.href.startsWith('http')
-                ? { target: '_blank', rel: 'noopener noreferrer' }
-                : {})}
-            >
-              {s.label}
-              <span className="sr-only"> — {s.handle}</span>
-            </Link>
-          ))}
-        </nav>
+          <div className="mt-10 flex flex-wrap items-center gap-3">
+            <Button href="/#work">View work</Button>
+            <Button href="/#contact" variant="secondary">
+              Get in touch
+            </Button>
+          </div>
+        </div>
+      </Section>
 
-        <p className="mt-16 font-mono text-xs text-[var(--color-text-faint)]">
-          Portfolio in active development · Phase 1 of 14
-        </p>
-      </div>
+      <Section id="about" labelledBy="about-heading">
+        <div className="container-content">
+          <Reveal>
+            <SectionHeading
+              id="about-heading"
+              eyebrow="About"
+              lead="How I"
+              accent="work"
+              description="Long-form profile, principles and experience timeline land in Phase 8."
+            />
+          </Reveal>
+        </div>
+      </Section>
+
+      <Section id="work" labelledBy="work-heading">
+        <div className="container-content">
+          <Reveal>
+            <SectionHeading
+              id="work-heading"
+              eyebrow="Selected work"
+              lead="Featured"
+              accent="projects"
+              description="Case studies with problem, architecture and outcome land in Phase 7."
+            />
+          </Reveal>
+          <div className="mt-10 flex flex-wrap gap-3">
+            {['Evolutionary Tycoon', 'FormAI', 'PawDoc', 'Ehliyet Akademi'].map((name, index) => (
+              <Reveal key={name} delay={staggerDelay(index)}>
+                <Pill mono>{name}</Pill>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </Section>
+
+      <Section id="contact" labelledBy="contact-heading">
+        <div className="container-content">
+          <Reveal>
+            <SectionHeading
+              id="contact-heading"
+              eyebrow="Contact"
+              lead="Let's build"
+              accent="something"
+              description="A validated contact form with server-side delivery lands in Phase 9. Until then, email works."
+            />
+          </Reveal>
+          <div className="mt-8">
+            <Button href={`mailto:${site.email}`}>{site.email}</Button>
+          </div>
+        </div>
+      </Section>
     </main>
   );
 }

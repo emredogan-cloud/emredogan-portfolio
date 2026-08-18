@@ -1,7 +1,12 @@
 import type { Metadata, Viewport } from 'next';
 import { Analytics } from '@/components/layout/analytics';
+import { Footer } from '@/components/layout/footer';
+import { Header } from '@/components/layout/header';
+import { ScrollProgress } from '@/components/layout/scroll-progress';
 import { SkipLink } from '@/components/layout/skip-link';
 import { site } from '@/content/site';
+// Side-effect import: validates every content module at build time (server-only).
+import '@/content/validate';
 import { fontVariables } from '@/lib/fonts';
 import { env } from '@/lib/env';
 import { personJsonLd } from '@/lib/utils/seo';
@@ -56,9 +61,12 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={fontVariables} suppressHydrationWarning>
-      <body className="min-h-dvh antialiased">
+      <body id="top" className="min-h-dvh antialiased">
         <SkipLink />
+        <ScrollProgress />
+        <Header />
         {children}
+        <Footer />
         <script
           type="application/ld+json"
           // Serialised server-side from a typed literal; no user input reaches this.
