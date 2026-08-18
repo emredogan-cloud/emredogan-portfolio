@@ -83,7 +83,7 @@ jobs:
   browser:
     name: Browser (${{ matrix.project }})
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     needs: build
     strategy:
       fail-fast: false
@@ -97,8 +97,44 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Install browser + system deps
-        run: pnpm exec playwright install --with-deps ${{ matrix.project }}
+
+      - name: Resolve Playwright version
+        id: pw
+        run: echo "version=$(pnpm exec playwright --version | sed 's/Version //')" >> "$GITHUB_OUTPUT"
+
+      # Browser binaries are 100-350 MB each and never change within a
+      # Playwright release. Caching them removes the download entirely on
+      # repeat runs.
+      - name: Restore browser cache
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}-${{ matrix.project }}
+
+      # Split deliberately. `playwright install --with-deps` shells out to
+      # apt-get, which stalled for 25 minutes on a hosted runner and took the
+      # whole job down with it. Separating the two gives the system packages
+      # their own short timeout and one retry, while the browser binary comes
+      # from cache and cannot be affected by a slow apt mirror.
+      - name: Install system dependencies
+        timeout-minutes: 8
+        run: |
+          set -uo pipefail
+          for attempt in 1 2; do
+            if pnpm exec playwright install-deps ${{ matrix.project }}; then
+              exit 0
+            fi
+            echo "::warning::playwright install-deps attempt $attempt failed; retrying"
+            sleep 15
+          done
+          exit 1
+
+      - name: Install browser binary
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        timeout-minutes: 10
+        run: pnpm exec playwright install ${{ matrix.project }}
+
       - name: E2E
         run: pnpm exec playwright test --project=${{ matrix.project }} tests/e2e
       - name: Accessibility (axe · WCAG 2.2 AA · zero violations)
@@ -173,8 +209,19 @@ jobs:
     if: always()
     needs: [quality, unit, build, browser, performance, security]
     steps:
-      - name: Fail if any required job did not succeed
+      # Written as "every result must be success" rather than a grep for
+      # "failure". `grep -q X && exit 1` is ambiguous under `bash -e`: it can
+      # fail the step when the pattern is absent, which is the opposite of the
+      # intent, and it silently misses results like "cancelled" or "skipped".
+      - name: Require every job to have succeeded
+        env:
+          RESULTS: ${{ toJSON(needs) }}
         run: |
-          echo '${{ toJSON(needs) }}' | grep -q '"result": "failure"' && exit 1
-          echo '${{ toJSON(needs) }}' | grep -q '"result": "cancelled"' && exit 1
+          set -euo pipefail
+          echo "$RESULTS"
+          not_success=$(echo "$RESULTS" | grep -o '"result": *"[a-z_]*"' | grep -vc '"success"' || true)
+          if [ "$not_success" -ne 0 ]; then
+            echo "::error::$not_success required job(s) did not succeed."
+            exit 1
+          fi
           echo "All required jobs succeeded."
