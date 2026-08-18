@@ -21,10 +21,10 @@ next-env.d.ts
 /playwright/.cache/
 .lighthouseci/
 
-# env
+# env — never commit any variant, including Vercel's generated .env.local
 .env
-.env*.local
-.env.production
+.env.*
+!.env.example
 
 # vercel
 .vercel

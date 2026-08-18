@@ -18,3 +18,11 @@ IP, and carries a honeypot field.
 No credentials are stored in this repository. `.env.example` documents the
 shape of the configuration; real values live only in GitHub Secrets and Vercel
 environment variables. Every push is scanned by gitleaks and CodeQL in CI.
+
+## Dependency advisories
+
+`pnpm audit --audit-level=high` runs on every push and pull request and fails
+the build. Where an advisory has no upstream fix, it is suppressed explicitly
+and documented — with severity, reachability and an exit condition — in
+[`docs/SECURITY_EXCEPTIONS.md`](./docs/SECURITY_EXCEPTIONS.md). A suppression
+without an entry there is treated as a defect.
