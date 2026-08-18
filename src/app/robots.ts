@@ -15,7 +15,9 @@ export default function robots(): MetadataRoute.Robots {
   }
 
   return {
-    rules: [{ userAgent: '*', allow: '/' }],
+    // The token gallery is public but is not content — it should never appear
+    // in a search result for this site.
+    rules: [{ userAgent: '*', allow: '/', disallow: '/dev/' }],
     sitemap: `${env.NEXT_PUBLIC_SITE_URL}/sitemap.xml`,
     host: env.NEXT_PUBLIC_SITE_URL,
   };

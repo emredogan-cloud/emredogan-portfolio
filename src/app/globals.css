@@ -58,6 +58,46 @@
   }
 }
 
+@layer components {
+  /*
+   * Scroll reveal.
+   *
+   * The resting state is *visible*. `.reveal-hidden` is added by script only
+   * after it has confirmed the element is below the fold, so content is
+   * readable before hydration, with JavaScript disabled, and to any crawler
+   * that does not run scripts. The failure mode of the opposite arrangement —
+   * hidden by default, shown by JS — is a blank page, which is not a trade
+   * worth making for an entrance animation.
+   */
+  .reveal {
+    transition:
+      opacity var(--duration-slow) var(--ease-out-expo),
+      transform var(--duration-slow) var(--ease-out-expo);
+    will-change: opacity, transform;
+  }
+
+  .reveal:not(.reveal-hidden) {
+    /* Once revealed, stop advertising the layer to the compositor. */
+    will-change: auto;
+  }
+
+  .reveal-hidden {
+    opacity: 0;
+  }
+
+  .reveal-up.reveal-hidden {
+    transform: translateY(24px);
+  }
+
+  .reveal-up-large.reveal-hidden {
+    transform: translateY(40px);
+  }
+
+  .reveal-fade.reveal-hidden {
+    transform: none;
+  }
+}
+
 @layer utilities {
   .container-content {
     width: 100%;
@@ -94,6 +134,13 @@
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
+  }
+
+  /* Reveals resolve to a plain fade with no displacement. The element still
+     ends fully visible; only the movement is removed. */
+  .reveal-up.reveal-hidden,
+  .reveal-up-large.reveal-hidden {
+    transform: none;
   }
 
   *,

@@ -284,7 +284,23 @@ Next'in görsel/metadata/route pipeline'ı bu projede net kazanç.
 | Saf CSS + IntersectionObserver           |      3 |         3 |   1 |    5 |     5 |        5 |     5 |   3 |         3 |        5 |     38 |
 | CSS scroll-driven (`animation-timeline`) |      4 |         4 |   1 |    5 |     5 |        3 |     5 |   4 |         2 |        4 |     37 |
 
-**Karar: Motion (`motion/react`) birincil.** Gerekçe: React-native API, spring/damping modeli
+**Karar (Faz 2'de revize edildi): Animasyon kütüphanesi yok — IntersectionObserver + CSS.**
+
+> ⚠️ **Revizyon (2026-08-18, Faz 2).** Aşağıdaki Motion kararı ölçülmeden verilmişti.
+> Uygulanıp ölçüldüğünde: doğrudan `motion` importu **45.4 KB**, `LazyMotion`+`m`
+> **54.0 KB** birinci taraf JS getirdi — 45 KB bütçesinin tamamı, sadece bir fade ve
+> 24 px'lik bir kaydırma için. IntersectionObserver + CSS ile aynı iş **7.6 KB**.
+> Framework tabanı 131 KB, tavan 175 KB olduğuna göre kalan 44 KB'ın tamamını
+> animasyon kütüphanesine harcamak, canvas arka planı / nav / carousel / form için
+> hiçbir şey bırakmıyordu. Kaybedilen tek yetenek `layoutId` paylaşımlı geçiş
+> (Faz 3'te CSS geçişli gösterge ile karşılanıyor). Kazanılan: içerik JS olmadan da
+> okunabilir, geçişler tamamen compositor'da çalışır. Gerekçe: `docs/DECISIONS.md`
+> ADR-0009.
+
+<details>
+<summary>Orijinal karar (arşiv)</summary>
+
+**Motion (`motion/react`) birincil.** Gerekçe: React-native API, spring/damping modeli
 marquee'nin ölçülen sönümlü hızını birebir modelleyebiliyor, `useReducedMotion` yerleşik,
 transform/opacity'ye sadık kalıyor (INP dostu).
 **GSAP kullanılmayacak** — artık ücretsiz olsa da ikinci bir animasyon runtime'ı taşımak
@@ -292,6 +308,8 @@ bundle ve zihinsel yük demek. İhtiyacımız olan tek özel şey split-text; on
 kendi `splitText` yardımcımızla yazacağız.
 **CSS scroll-driven animations** yalnızca `@supports` ile progressive enhancement olarak
 (scroll progress bar gibi) kullanılacak; temel davranış JS ile garanti altında kalacak.
+
+</details>
 
 #### C) Kaydırma (scroll) stratejisi
 
@@ -349,7 +367,7 @@ doğrulanacak; sorun çıkarsa Inter'e düşülür.
 ```
 Runtime      Next.js 16.3 (App Router) · React 19 · TypeScript 5.9 (build'de TS7 denenecek)
 Stil         Tailwind CSS v4 (@theme CSS-first) + design tokens (CSS custom properties)
-Animasyon    motion v13 (motion/react) + in-house splitText util
+Animasyon    IntersectionObserver + CSS transitions (kütüphane yok) + in-house splitText
 Arka plan    Canvas 2D starfield/meteor engine (bağımlılıksız)
 İçerik       TypeScript content modules + Zod şema doğrulaması
 Form         Next.js Server Action + Resend (e-posta) + honeypot + rate limit

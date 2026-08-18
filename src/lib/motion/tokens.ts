@@ -45,6 +45,18 @@ export const distance = {
   magneticMax: 6,
 } as const;
 
+/**
+ * Index-based stagger delay, in seconds.
+ *
+ * Lives here rather than beside the `Reveal` component: it is a pure function
+ * of the token scale, and server components need to call it when laying out a
+ * grid. Anything exported from a `'use client'` module cannot be called during
+ * a server render.
+ */
+export function staggerDelay(index: number, step: number = stagger.base): number {
+  return index * step;
+}
+
 export const marquee = {
   /** Cruise speed in px/s, measured from the reference. */
   speed: 97,

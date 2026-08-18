@@ -4,6 +4,115 @@ Format: decision · context · alternatives · consequence. Newest first.
 
 ---
 
+## ADR-0009 — Drop `motion`; reveals are IntersectionObserver + CSS
+
+**Date:** 2026-08-18 · **Phase:** 2 · **Status:** accepted
+**Major architecture change · roadmap §2.2-B and §3.1 updated**
+
+**Context.** The roadmap selected Motion v13 as the animation runtime after a
+decision matrix. Once it was actually wired up and measured, the numbers did
+not survive contact:
+
+| Configuration                       | First-party JS                                 |
+| ----------------------------------- | ---------------------------------------------- |
+| Budget                              | 45 KB                                          |
+| `motion` imported directly          | 45.4 KB — over on its own                      |
+| `LazyMotion` + `m` + `domAnimation` | 54.0 KB (11.4 KB core + 34.4 KB feature chunk) |
+| IntersectionObserver + CSS          | **7.6 KB**                                     |
+
+`LazyMotion` made it _worse_, not better: the feature chunk is fetched as soon
+as a `Reveal` is on the page, so on any real section it is first-load payload
+with an extra request in front of it.
+
+The framework floor is 131 KB and the total ceiling is 175 KB, leaving 44 KB
+for everything this site still has to build — the canvas starfield, the
+navigation island, the mobile menu, the testimonial carousel, the contact form.
+Motion would have consumed all of it to animate a fade and a 24-pixel
+translate.
+
+**Decision.** No animation library. `Reveal` is one `IntersectionObserver` that
+toggles a class; the transition is declared in CSS.
+
+**What this costs.** `layoutId` shared-element transitions are gone, so the
+navigation's active-section indicator (Phase 3) is a CSS-transitioned bar
+rather than a FLIP-projected pill. That is a smaller effect, and it is the only
+capability actually lost — nothing else planned needs a physics engine. The
+marquee's damped velocity (Phase 6) was always going to be a hand-written lerp
+against the values measured from the reference; it does not need a library.
+
+**What this gains, beyond 46 KB.**
+
+- The resting state is _visible_, and the hidden class is applied by script only
+  after confirming the element is below the fold. Content is therefore readable
+  before hydration, with JavaScript disabled, and to any crawler that does not
+  run scripts. A library-driven `initial="hidden"` renders a blank page in all
+  three cases. `tests/e2e/reveal.spec.ts` asserts the no-JS path.
+- Transitions are pure CSS, so they run on the compositor with no main-thread
+  work at all — which is where the INP budget is won or lost.
+- Reduced motion is a media query rather than a runtime branch.
+
+**Alternatives.** Keep Motion and raise the budget — rejected under
+`WORKING_DISCIPLINE.md` §7.2; the budget is what caught this. Keep Motion only
+for the nav pill — rejected: the whole feature bundle loads either way.
+
+**Consequence.** 7.6 KB of 45 KB used at the end of Phase 2, with the heaviest
+work still ahead. Recorded as a major architecture change per the roadmap's
+change-control rules: discovery recorded, smallest safe adjustment made,
+roadmap updated, execution continues.
+
+---
+
+## ADR-0008 — `/dev/tokens` stays public with `noindex`
+
+**Date:** 2026-08-18 · **Phase:** 2 · **Status:** accepted · **Deviates from roadmap §Faz 2**
+
+**Context.** The roadmap specified a token gallery "compiled only in
+development". The natural implementation is a `VERCEL_ENV` check that calls
+`notFound()` — but Phase 1 established that Vercel's system variables cannot be
+relied on to reach a build (ADR-0005). A route that 404s based on a variable
+that may be absent is a worse outcome than one that is simply public.
+
+**Decision.** The gallery ships as a normal route, marked `robots: noindex`
+and disallowed under `/dev/` in `robots.ts`.
+
+**Consequence.** No conditional build behaviour, the visual and axe baselines
+run against the same artifact in CI as in production, and a live design-token
+gallery is a reasonable thing for a developer's portfolio to expose. Recorded
+as a deliberate deviation per `WORKING_DISCIPLINE.md` §4.5.
+
+---
+
+## ADR-0007 — `@theme static` for design tokens
+
+**Date:** 2026-08-18 · **Phase:** 2 · **Status:** accepted
+
+**Context.** The token gallery rendered "Display" at the same size as "Heading
+4". Inspecting the compiled stylesheet showed `--text-display`, `--text-h4`,
+`--radius-sm`, `--radius-lg` and `--radius-2xl` were **absent from the build**.
+
+Tailwind v4 emits only the theme variables it can see referenced in class
+names. Any token consumed another way — an inline `style`, a value read in
+JavaScript, a colour handed to the canvas background engine in Phase 5 — is
+invisible to that scan and is dropped. The property then silently falls back to
+its inherited value. No error, no warning, no failing test; just wrong type
+sizes in production.
+
+**Decision.** `@theme static`, which emits every declaration in the block.
+`tests/unit/token-emission.test.ts` compares the tokens declared in
+`tokens.css` against the compiled CSS and fails if any went missing, so the
+protection cannot be removed silently either. The unit job now runs `pnpm build`
+first so the test has real output to check.
+
+**Alternatives.** Referencing every token from a dummy utility class —
+rejected: unmaintainable, and it would break again the moment a token is added.
+Accepting the loss and only using tokens through class names — rejected: Phase
+5's canvas engine has to read colour tokens in JavaScript.
+
+**Consequence.** ~1.8 KB more CSS (4.2 → 6.1 KB gzip, against a 30 KB budget)
+in exchange for a design system that cannot silently lose a token.
+
+---
+
 ## ADR-0006 — Split the JS budget into framework floor and first-party delta
 
 **Date:** 2026-08-18 · **Phase:** 1 · **Status:** accepted · **Roadmap updated:** §7

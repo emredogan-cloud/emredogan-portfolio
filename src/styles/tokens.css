@@ -6,7 +6,24 @@
  * hardcode a hex, radius, blur or shadow — every value lives here.
  */
 
-@theme {
+/*
+ * `static` is load-bearing, not decorative.
+ *
+ * By default Tailwind v4 emits only the theme variables it can see referenced
+ * in class names, and drops the rest. Tokens consumed any other way — an
+ * inline `style`, a value read in JavaScript, a colour passed to the canvas
+ * background engine — are invisible to that scan and disappear from the built
+ * stylesheet. The property then silently falls back to its inherited value:
+ * no error, no warning, just wrong type sizes and wrong radii in production.
+ * That is exactly what happened to `--text-display`, `--text-h4` and three of
+ * the radii before this was added.
+ *
+ * `@theme static` emits every declaration below. The cost is a few hundred
+ * bytes of CSS; the alternative is a design system that quietly loses tokens.
+ * `tests/unit/token-emission.test.ts` fails the build if any token declared
+ * here is missing from the compiled output.
+ */
+@theme static {
   /* ── Surface ─────────────────────────────────────────────────────────── */
   --color-void: #03070c;
   --color-surface-1: #0b111a;

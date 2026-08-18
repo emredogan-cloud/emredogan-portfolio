@@ -46,3 +46,22 @@ describe('motion tokens', () => {
     expect(distance.magneticMax).toBeLessThanOrEqual(10);
   });
 });
+
+describe('staggerDelay', () => {
+  it('is zero for the first item so a group starts immediately', async () => {
+    const { staggerDelay } = await import('@/lib/motion/tokens');
+    expect(staggerDelay(0)).toBe(0);
+  });
+
+  it('scales linearly with the step token', async () => {
+    const { staggerDelay } = await import('@/lib/motion/tokens');
+    expect(staggerDelay(3)).toBeCloseTo(3 * stagger.base, 10);
+    expect(staggerDelay(2, stagger.tight)).toBeCloseTo(2 * stagger.tight, 10);
+  });
+
+  it('keeps a realistic group under half a second of total lead-in', async () => {
+    const { staggerDelay } = await import('@/lib/motion/tokens');
+    // Six cards is the largest grid the design uses.
+    expect(staggerDelay(5)).toBeLessThan(0.5);
+  });
+});
