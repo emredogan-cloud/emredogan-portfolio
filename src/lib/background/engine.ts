@@ -86,6 +86,7 @@ export function createEngine({ staticCanvas, liveCanvas, profile, seed }: Engine
 
   let frame = 0;
   let renderedFrames = 0;
+  let lastPublish = 0;
   let running = false;
   let lastTime = 0;
   let elapsed = 0;
@@ -219,17 +220,23 @@ export function createEngine({ staticCanvas, liveCanvas, profile, seed }: Engine
     stepMeteors(pool, delta, width, height);
     drawLive(elapsed);
 
-    // Publish liveness roughly twice a second.
+    // Publish liveness on a timer, not a frame count.
     //
     // Comparing canvas pixels is the obvious way to check "is the loop
     // running", and it does not survive contact with three engines: WebKit's
     // `toDataURL` did not reflect changes, and on the `low` profile there are
     // no twinkling stars, so between meteors the layer is legitimately blank.
     // A counter answers the actual question — the loop advanced — in a way
-    // every engine agrees on. Written every 30 frames rather than every frame
-    // so the loop is not doing DOM work sixty times a second.
+    // every engine agrees on.
+    //
+    // Published every 250 ms rather than every 30 frames. A frame count is
+    // frame-rate dependent: at the ~9 fps a headless engine manages on a shared
+    // runner, thirty frames is 3.3 seconds, so the signal arrived too late to
+    // observe. A wall-clock interval appears at the same rate everywhere and
+    // still keeps DOM writes out of the per-frame path.
     renderedFrames += 1;
-    if (renderedFrames % 30 === 0) {
+    if (now - lastPublish >= 250) {
+      lastPublish = now;
       liveCanvas.dataset['frame'] = String(renderedFrames);
     }
   }
@@ -244,6 +251,7 @@ export function createEngine({ staticCanvas, liveCanvas, profile, seed }: Engine
       }
       running = true;
       lastTime = performance.now();
+      lastPublish = 0;
       frame = requestAnimationFrame(tick);
     },
     stop() {

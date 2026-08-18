@@ -158,9 +158,11 @@ test.describe('background', () => {
         ),
       );
 
-    // Confirm it is running before claiming it stopped.
+    // Confirm it is running before claiming it stopped. The engine publishes
+    // its counter every 250 ms, so this resolves in well under a second on any
+    // engine — the generous timeout is only for a contended runner.
     const running = await frames();
-    await expect.poll(frames, { timeout: 5_000, intervals: [200] }).toBeGreaterThan(running);
+    await expect.poll(frames, { timeout: 8_000, intervals: [150] }).toBeGreaterThan(running);
 
     const stillRan = await page.evaluate(async () => {
       Object.defineProperty(document, 'hidden', { configurable: true, value: true });

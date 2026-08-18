@@ -112,10 +112,28 @@ same mistake cannot be mistaken for a coverage failure again.
 
 ---
 
-**5. A 51 ms long task while scrolling the work grid.** Caught by the
-performance suite added in Phase 6, one day after it was added. Decoding a
-1600×1000 cover on the main thread; fixed with `decoding="async"` and explicit
-lazy loading on non-priority covers.
+**5. A long-task test that was measuring the wrong thing — and a fix aimed at
+the wrong cause.** CI reported a 51 ms long task "while scrolling" the work
+grid. The first fix assumed image decode and added `decoding="async"`. The task
+then measured **58 ms**, so the assumption was wrong.
+
+Attributing it properly with the Long Animation Frame API named the real
+culprit: a Next.js chunk evaluating for 30 ms plus React's scheduler working in
+5 ms slices — **hydration**, not scrolling. The test observed with
+`buffered: true` and started scrolling immediately after navigation, so it was
+capturing the startup frame and labelling it a scroll cost. Startup blocking
+time is real, but Lighthouse's assertion already owns it.
+
+The test now waits for hydration to finish, then starts observing, then
+scrolls — so it measures what its name claims. `decoding="async"` was kept; it
+is correct regardless, just not the fix for this.
+
+**7. A liveness signal that was frame-rate dependent.** The background engine
+published its frame counter every 30 frames. At the ~9 fps a headless engine
+manages on a shared runner that is 3.3 seconds, so WebKit's hidden-tab test
+timed out waiting for a signal that had not been written yet. Now published
+every 250 ms of wall-clock time, which appears at the same rate on every engine
+and still keeps DOM writes out of the per-frame path.
 
 **6. A test that depended on the frame rate to be correct.** "The pause control
 stops it" waited a fixed 1.4 s for the ramp to settle. The loop clamps each

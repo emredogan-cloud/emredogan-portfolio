@@ -65,17 +65,44 @@ test.describe('interaction latency', () => {
   });
 
   test('scrolling does not produce a long task', async ({ page }) => {
-    await page.goto('/');
+    /**
+     * Measures scrolling, which the first version of this test did not.
+     *
+     * It observed with `buffered: true` and began scrolling immediately after
+     * navigation, so the entry it caught was the hydration frame — attributed,
+     * via the Long Animation Frame API, to a Next.js chunk evaluating for 30 ms
+     * plus React's scheduler working in 5 ms slices. Startup cost is real, but
+     * Lighthouse's total-blocking-time assertion already owns it, and blaming
+     * it on scrolling sent the previous fix after an image decode that was
+     * never the cause.
+     *
+     * So: wait for hydration to finish, then start observing, then scroll.
+     */
+    await page.goto('/work');
+
+    // The background engine writes its profile only after mounting, so this is
+    // a reliable "the client has taken over" signal.
+    await page.locator('canvas[data-background-profile]').waitFor({ state: 'attached' });
+    await expect
+      .poll(() =>
+        page.locator('canvas[data-background-profile]').getAttribute('data-background-profile'),
+      )
+      .not.toBe('pending');
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(600);
 
     const longTasks = await page.evaluate(
       () =>
         new Promise<number[]>((resolve) => {
-          const tasks: number[] = [];
-          const observer = new PerformanceObserver((list) => {
-            for (const entry of list.getEntries()) tasks.push(entry.duration);
-          });
+          const durations: number[] = [];
+          let observer: PerformanceObserver;
           try {
-            observer.observe({ type: 'longtask', buffered: true });
+            // No `buffered: true` — anything already recorded belongs to
+            // startup, not to the scroll this is about to perform.
+            observer = new PerformanceObserver((list) => {
+              for (const entry of list.getEntries()) durations.push(entry.duration);
+            });
+            observer.observe({ type: 'longtask' });
           } catch {
             resolve([]); // Not supported (WebKit); nothing to assert.
             return;
@@ -90,20 +117,21 @@ test.describe('interaction latency', () => {
             } else {
               setTimeout(() => {
                 observer.disconnect();
-                resolve(tasks);
-              }, 200);
+                resolve(durations);
+              }, 300);
             }
           };
           requestAnimationFrame(step);
         }),
     );
 
-    // The scroll-spy and the header both run on IntersectionObserver
-    // specifically so scrolling costs nothing, so any long task here is worth
-    // looking at. The first version of this assertion caught a real one: a
-    // 51 ms image decode on the main thread when the project covers landed,
-    // fixed with `decoding="async"`.
+    // The scroll-spy, the header and the marquee all run on
+    // IntersectionObserver specifically so scrolling costs nothing. A long task
+    // here means one of them started reading layout.
     const over50 = longTasks.filter((duration) => duration > 50);
-    expect(over50, `long tasks: ${over50.map((d) => d.toFixed(0)).join(', ')}ms`).toEqual([]);
+    expect(
+      over50,
+      `long tasks while scrolling: ${over50.map((d) => d.toFixed(0)).join(', ')}ms`,
+    ).toEqual([]);
   });
 });
