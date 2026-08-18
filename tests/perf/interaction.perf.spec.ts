@@ -99,8 +99,10 @@ test.describe('interaction latency', () => {
     );
 
     // The scroll-spy and the header both run on IntersectionObserver
-    // specifically so scrolling costs nothing. A long task here means one of
-    // them started reading layout.
+    // specifically so scrolling costs nothing, so any long task here is worth
+    // looking at. The first version of this assertion caught a real one: a
+    // 51 ms image decode on the main thread when the project covers landed,
+    // fixed with `decoding="async"`.
     const over50 = longTasks.filter((duration) => duration > 50);
     expect(over50, `long tasks: ${over50.map((d) => d.toFixed(0)).join(', ')}ms`).toEqual([]);
   });

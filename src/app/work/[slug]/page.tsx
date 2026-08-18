@@ -137,6 +137,7 @@ export default async function CaseStudyPage({ params }: { params: Promise<{ slug
                   height={project.cover.height}
                   sizes="(min-width: 1024px) 72rem, 96vw"
                   priority
+                  decoding="async"
                   className="size-full object-cover object-top"
                 />
               ) : (

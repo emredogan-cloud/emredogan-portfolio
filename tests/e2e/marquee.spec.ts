@@ -7,6 +7,27 @@ async function offset(page: Page): Promise<number> {
   return page.locator(track).evaluate((el) => new DOMMatrix(getComputedStyle(el).transform).m41);
 }
 
+/**
+ * Waits until the strip stops moving, then returns where it stopped.
+ *
+ * Frame-rate independent by construction: it watches for the offset to hold
+ * still across consecutive samples instead of assuming how long the ramp takes
+ * on this engine.
+ */
+async function settleOffset(page: Page, timeout = 10_000): Promise<number> {
+  const deadline = Date.now() + timeout;
+  let previous = await offset(page);
+
+  while (Date.now() < deadline) {
+    await page.waitForTimeout(250);
+    const current = await offset(page);
+    if (Math.abs(current - previous) < 0.5) return current;
+    previous = current;
+  }
+
+  throw new Error(`the strip never came to rest within ${timeout}ms`);
+}
+
 test.describe('technology marquee', () => {
   test('names every technology and its projects for a screen reader', async ({ page }) => {
     await page.goto('/');
@@ -48,9 +69,15 @@ test.describe('technology marquee', () => {
     await control.click();
     await expect(control).toHaveAccessibleName(/^play technology strip animation$/i);
 
-    // The ramp is ~0.7 s by design, so allow it to settle before asserting.
-    await page.waitForTimeout(1_400);
-    const settled = await offset(page);
+    // Poll until it has come to rest, rather than assuming a fixed settle time.
+    //
+    // The velocity decays exponentially over a ~0.7 s ramp, but the loop clamps
+    // each frame's delta to 50 ms so a resumed tab cannot jump. On a headless
+    // engine delivering ~9 frames a second that clamp makes the decay advance
+    // slower than wall-clock, so a fixed 1.4 s wait left 2 px of residual drift
+    // on WebKit while Chromium had long since stopped. Waiting for the actual
+    // condition tests the contract — pausing stops it — at any frame rate.
+    const settled = await settleOffset(page);
     await page.waitForTimeout(700);
     expect(Math.abs((await offset(page)) - settled)).toBeLessThan(1);
 
@@ -75,8 +102,7 @@ test.describe('technology marquee', () => {
     await viewport.scrollIntoViewIfNeeded();
     await viewport.hover();
 
-    await page.waitForTimeout(1_400);
-    const settled = await offset(page);
+    const settled = await settleOffset(page);
     await page.waitForTimeout(700);
     expect(Math.abs((await offset(page)) - settled)).toBeLessThan(1);
   });

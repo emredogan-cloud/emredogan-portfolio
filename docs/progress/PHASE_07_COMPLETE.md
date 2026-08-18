@@ -112,6 +112,21 @@ same mistake cannot be mistaken for a coverage failure again.
 
 ---
 
+**5. A 51 ms long task while scrolling the work grid.** Caught by the
+performance suite added in Phase 6, one day after it was added. Decoding a
+1600×1000 cover on the main thread; fixed with `decoding="async"` and explicit
+lazy loading on non-priority covers.
+
+**6. A test that depended on the frame rate to be correct.** "The pause control
+stops it" waited a fixed 1.4 s for the ramp to settle. The loop clamps each
+frame's delta to 50 ms so a resumed tab cannot jump, which means on a headless
+engine delivering ~9 frames a second the decay advances slower than wall-clock —
+Chromium had long since stopped while WebKit still had 2 px of drift. The test
+now polls until the strip actually comes to rest, which is the contract, at any
+frame rate.
+
+---
+
 ## Known limitations
 
 - Evolutionary Tycoon's live capture shows **placeholder art** — magenta
