@@ -2,10 +2,11 @@
 
 import { useRef, useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MobileMenu } from '@/components/layout/mobile-menu';
-import { primaryNav, scrollSpySections } from '@/content/navigation';
+import { navItemForPath, primaryNav, scrollSpySections } from '@/content/navigation';
 import { site } from '@/content/site';
 import { useScrolledPast } from '@/lib/hooks/use-scroll-state';
 import { useScrollSpy } from '@/lib/hooks/use-scroll-spy';
@@ -24,8 +25,16 @@ import { cn } from '@/lib/utils/cn';
  * information is available to a screen reader and not only to the eye.
  */
 export function Header() {
+  const pathname = usePathname();
   const scrolled = useScrolledPast(48);
-  const activeId = useScrollSpy(scrollSpySections);
+  const spyId = useScrollSpy(scrollSpySections);
+
+  // On `/` the anchored sections exist and the spy is authoritative. On any
+  // other route they do not, and the spy would fall back to its first id —
+  // marking "Home" as current while the reader is on a case study. Route
+  // matching wins there.
+  const routeId = navItemForPath(pathname);
+  const activeId = routeId ?? (pathname === '/' ? spyId : null);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
 

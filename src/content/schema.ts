@@ -55,7 +55,14 @@ const projectVisualSchema = z.object({
   height: z.number().int().positive(),
   /** How the asset was produced. A reconstruction is never presented as a
    *  live product capture. */
-  capture: z.enum(['real', 'diagram', 'placeholder']),
+  /**
+   * How the image was produced. A reconstruction is never presented as a
+   * capture of a running product.
+   *
+   *  - `real`      — a screenshot of the live site or the shipped app
+   *  - `diagram`   — an authored illustration of the architecture
+   */
+  capture: z.enum(['real', 'diagram']),
 });
 
 export const projectSchema = z.object({
@@ -80,8 +87,21 @@ export const projectSchema = z.object({
   highlights: z.array(z.string().min(20)).min(2),
   metrics: z.array(z.object({ value: z.string().min(1), label: z.string().min(1) })),
   links: z.array(projectLinkSchema),
-  cover: projectVisualSchema,
-  gallery: z.array(projectVisualSchema).default([]),
+  /**
+   * `null` where no capture is possible — a private repository, or a project
+   * that was deliberately never deployed. Those render a generated cover that
+   * reads as a deliberate mark rather than a missing image, and the absence is
+   * visible in the UI rather than papered over with a stock photo.
+   */
+  cover: projectVisualSchema.nullable(),
+  /** Accent used by the generated cover and the case-study header. */
+  accent: z.enum(['blue', 'cyan', 'amber', 'emerald', 'rose', 'violet']),
+  /**
+   * Optional rather than defaulted: `.default([])` makes the field *required*
+   * in the inferred output type, which forces every authored record to write
+   * `gallery: []` even when it has none. Read sites use `?? []`.
+   */
+  gallery: z.array(projectVisualSchema).optional(),
   featured: z.boolean(),
   /** Lower renders earlier. */
   order: z.number().int().nonnegative(),

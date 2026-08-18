@@ -70,6 +70,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {children}
         <Footer />
         <script
+          id="ld-person"
           type="application/ld+json"
           // Serialised server-side from a typed literal; no user input reaches this.
           dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd()) }}

@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next';
-import { projects } from '@/content/projects';
+import { orderedProjects } from '@/content/projects';
 import { env } from '@/lib/env';
 
 const base = env.NEXT_PUBLIC_SITE_URL;
@@ -14,7 +14,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${base}/about`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
   ];
 
-  const projectRoutes: MetadataRoute.Sitemap = projects.map((p) => ({
+  const projectRoutes: MetadataRoute.Sitemap = orderedProjects.map((p) => ({
     url: `${base}/work/${p.slug}`,
     lastModified: now,
     changeFrequency: 'yearly',

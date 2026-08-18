@@ -1,12 +1,11 @@
 import { Hero } from '@/components/sections/hero';
 import { TechMarquee } from '@/components/sections/tech-marquee';
+import { Work } from '@/components/sections/work';
 import { Section } from '@/components/layout/section';
 import { Button } from '@/components/ui/button';
-import { Pill } from '@/components/ui/pill';
 import { Reveal } from '@/components/ui/reveal';
 import { SectionHeading } from '@/components/ui/section-heading';
 import { site } from '@/content/site';
-import { staggerDelay } from '@/lib/motion/tokens';
 
 /**
  * The single-page experience.
@@ -37,26 +36,7 @@ export default function HomePage() {
         </div>
       </Section>
 
-      <Section id="work" labelledBy="work-heading" glow="right-cyan">
-        <div className="container-content">
-          <Reveal>
-            <SectionHeading
-              id="work-heading"
-              eyebrow="Selected work"
-              lead="Featured"
-              accent="projects"
-              description="Case studies with problem, architecture and outcome land in Phase 7."
-            />
-          </Reveal>
-          <div className="mt-10 flex flex-wrap gap-3">
-            {['Evolutionary Tycoon', 'FormAI', 'PawDoc', 'Ehliyet Akademi'].map((name, index) => (
-              <Reveal key={name} delay={staggerDelay(index)}>
-                <Pill mono>{name}</Pill>
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </Section>
+      <Work />
 
       <Section id="contact" labelledBy="contact-heading" glow="center-blue">
         <div className="container-content">

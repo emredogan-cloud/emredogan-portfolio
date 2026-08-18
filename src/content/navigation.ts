@@ -29,3 +29,18 @@ export const footerNav = {
     { id: 'about-page', label: 'About & experience', href: '/about' },
   ],
 } as const;
+
+/**
+ * Which navigation item a non-home route belongs to.
+ *
+ * On `/` the active item comes from the scroll-spy. Everywhere else the spy has
+ * nothing to observe — none of the anchored sections exist — and would fall
+ * back to the first id, marking "Home" as current while the reader is on a case
+ * study. Route matching answers it correctly instead.
+ */
+export function navItemForPath(pathname: string): string | null {
+  if (pathname === '/') return null;
+  if (pathname.startsWith('/work')) return 'work';
+  if (pathname.startsWith('/about')) return 'about';
+  return null;
+}
