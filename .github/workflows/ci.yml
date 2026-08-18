@@ -89,6 +89,22 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: build
+    # Playwright's own image, which ships every browser together with the
+    # system libraries they need.
+    #
+    # `playwright install --with-deps` shells out to apt, and apt on a hosted
+    # runner is not dependable: it stalled past an 8-minute timeout on both
+    # Firefox and WebKit in the same run, taking two jobs down over a network
+    # hiccup rather than anything in this repository. Splitting the step and
+    # adding a retry was not enough. The image removes apt from the critical
+    # path altogether.
+    #
+    # Keep this tag in step with the `@playwright/test` version in
+    # package.json. If they drift, the `playwright install` step below quietly
+    # fetches the right browser rather than failing.
+    container:
+      image: mcr.microsoft.com/playwright:v1.62.1-noble
+      options: --user 1001
     strategy:
       fail-fast: false
       matrix:
@@ -102,40 +118,10 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
 
-      - name: Resolve Playwright version
-        id: pw
-        run: echo "version=$(pnpm exec playwright --version | sed 's/Version //')" >> "$GITHUB_OUTPUT"
-
-      # Browser binaries are 100-350 MB each and never change within a
-      # Playwright release. Caching them removes the download entirely on
-      # repeat runs.
-      - name: Restore browser cache
-        id: pw-cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}-${{ matrix.project }}
-
-      # Split deliberately. `playwright install --with-deps` shells out to
-      # apt-get, which stalled for 25 minutes on a hosted runner and took the
-      # whole job down with it. Separating the two gives the system packages
-      # their own short timeout and one retry, while the browser binary comes
-      # from cache and cannot be affected by a slow apt mirror.
-      - name: Install system dependencies
-        timeout-minutes: 8
-        run: |
-          set -uo pipefail
-          for attempt in 1 2; do
-            if pnpm exec playwright install-deps ${{ matrix.project }}; then
-              exit 0
-            fi
-            echo "::warning::playwright install-deps attempt $attempt failed; retrying"
-            sleep 15
-          done
-          exit 1
-
-      - name: Install browser binary
-        if: steps.pw-cache.outputs.cache-hit != 'true'
+      # A no-op when the image's bundled browser matches, and a self-heal when
+      # the image tag and the npm package have drifted. No `--with-deps`: the
+      # system libraries are already in the image.
+      - name: Ensure browser binary
         timeout-minutes: 10
         run: pnpm exec playwright install ${{ matrix.project }}
 
