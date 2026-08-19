@@ -1,6 +1,25 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 const form = 'form:has(textarea[name="message"])';
+
+/**
+ * Waits until the form is hydrated.
+ *
+ * The render timestamp is written to its input by an effect, so a non-empty
+ * value is proof that React has taken over. Tests that set field values before
+ * that point lost them on a slow CI runner — WebKit reported "delivery
+ * unconfigured" for two tests that should have short-circuited, because the
+ * honeypot and the timestamp they had set were no longer there by the time the
+ * form was submitted.
+ */
+async function hydrated(page: Page) {
+  await page.waitForFunction(
+    () =>
+      (document.querySelector('input[name="renderedAt"]') as HTMLInputElement | null)?.value !== '',
+    null,
+    { timeout: 15_000 },
+  );
+}
 
 test.describe('contact form', () => {
   test('every field has a visible label, not a placeholder pretending to be one', async ({
@@ -86,6 +105,7 @@ test.describe('contact form', () => {
 
   test('a bot filling the honeypot is thanked, not told it was caught', async ({ page }) => {
     await page.goto('/#contact');
+    await hydrated(page);
     await page.getByLabel(/^Your name/i).fill('Ada Lovelace');
     await page.getByLabel(/^Email/i).fill('ada@example.com');
     await page
@@ -102,6 +122,7 @@ test.describe('contact form', () => {
 
   test('an instant submission is discarded, because nobody types that fast', async ({ page }) => {
     await page.goto('/#contact');
+    await hydrated(page);
     // Fill through the DOM so no human-speed delay is introduced.
     await page.locator(form).evaluate((el: HTMLFormElement) => {
       (el.elements.namedItem('name') as HTMLInputElement).value = 'Ada Lovelace';

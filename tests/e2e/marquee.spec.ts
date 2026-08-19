@@ -31,42 +31,24 @@ function travelled(from: number, to: number, loop: number): number {
 }
 
 /**
- * Waits until the strip stops moving, then returns where it stopped.
+ * Waits until the strip has actually stopped, then returns where it stopped.
  *
- * Frame-rate independent by construction: it watches for the offset to hold
- * still across consecutive samples instead of assuming how long the ramp takes
- * on this engine.
+ * Reads the engine's own published state rather than inferring rest from the
+ * offset. Two earlier versions of this helper inferred it and both were wrong
+ * in the same way: watching for the offset to stop changing cannot distinguish
+ * "the animation has come to rest" from "no frame was delivered in the last
+ * 250 ms", and on a loaded CI runner those are indistinguishable for a quarter
+ * of a second at a time. The first version accepted 0.5 px of change (2 px/s)
+ * and failed WebKit by 2 px; tightening it to 0.01 px failed WebKit by 2.5 px,
+ * because a starved renderer satisfies any threshold you pick.
  *
- * **"Still" means still, not nearly still.** An earlier version accepted a
- * change under 0.5 px between 250 ms samples, which is 2 px/s — so it returned
- * while the strip was visibly decelerating, and the caller's "it has not moved
- * since" assertion then failed by 2 px on WebKit in CI. The velocity ramp is
- * exponential and asymptotic, so any loose threshold has that bug at some
- * frame rate.
- *
- * The engine gives an exact condition to wait for instead: below 0.05 px/s it
- * stops writing the transform altogether, and it writes with two decimals. So
- * a change under 0.01 px between samples means the write has stopped, not that
- * it has slowed down.
- *
- * The timeout is generous because the loop clamps each frame's delta to 50 ms.
- * On a headless engine delivering a handful of frames a second, the ramp's
- * 1.8 s of simulated time can take several times that in wall-clock — the
- * clamp is protecting a resumed tab from jumping, and a starved CI runner
- * looks exactly like a resumed tab.
+ * The engine sets `data-marquee="stopped"` when its velocity falls below the
+ * point at which it stops writing the transform. That is the actual condition,
+ * it is unambiguous, and it costs one attribute write per state change.
  */
 async function settleOffset(page: Page, timeout = 20_000): Promise<number> {
-  const deadline = Date.now() + timeout;
-  let previous = await offset(page);
-
-  while (Date.now() < deadline) {
-    await page.waitForTimeout(250);
-    const current = await offset(page);
-    if (Math.abs(current - previous) < 0.01) return current;
-    previous = current;
-  }
-
-  throw new Error(`the strip never came to rest within ${timeout}ms`);
+  await expect(page.locator(track)).toHaveAttribute('data-marquee', 'stopped', { timeout });
+  return offset(page);
 }
 
 test.describe('technology marquee', () => {

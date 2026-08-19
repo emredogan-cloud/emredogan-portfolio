@@ -80,7 +80,18 @@ export function TechMarquee() {
 
       // Below a twentieth of a pixel per second the strip has stopped; skip the
       // style write rather than dirtying a layer forever.
-      if (Math.abs(velocity) < 0.05 && Math.abs(target) < 0.05) return;
+      //
+      // The state is published because a test cannot tell "stopped" from "no
+      // frame was delivered" by watching the offset — and on a loaded CI
+      // runner those look identical for a quarter of a second at a time, which
+      // is exactly how a WebKit job failed by 2.5 px of residual drift after
+      // the helper had already declared the strip at rest. Written only when
+      // it changes, so this is not a per-frame DOM write.
+      if (Math.abs(velocity) < 0.05 && Math.abs(target) < 0.05) {
+        if (track.dataset['marquee'] !== 'stopped') track.dataset['marquee'] = 'stopped';
+        return;
+      }
+      if (track.dataset['marquee'] !== 'running') track.dataset['marquee'] = 'running';
 
       offset = wrapOffset(offset + velocity * delta, copy.offsetWidth);
       track.style.transform = `translate3d(${offset.toFixed(2)}px, 0, 0)`;
