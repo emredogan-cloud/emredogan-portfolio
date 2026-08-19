@@ -60,7 +60,11 @@ test.describe('work section on the home page', () => {
 
     // And the link itself navigates.
     await card.locator(':is(h2, h3) a').click();
-    await expect(page).toHaveURL(/\/work\/[a-z-]+$/);
+    // `waitForURL`, not `toHaveURL`: a cross-document navigation that has not
+    // started yet and one that will never start look the same to a URL
+    // assertion, and on a loaded runner the difference is a click landing
+    // before the router attaches.
+    await page.waitForURL(/\/work\/[a-z-]+$/, { timeout: 15_000 });
   });
 });
 

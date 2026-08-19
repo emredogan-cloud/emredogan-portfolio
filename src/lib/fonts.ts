@@ -21,8 +21,23 @@ import localFont from 'next/font/local';
  * outside the subset, and `tests/e2e/typography.spec.ts` measures the Turkish
  * glyphs (ı İ ş ğ ç ö ü) in a real browser.
  *
- * `display: 'swap'` with `adjustFontFallback` left on: the fallback metrics
- * Next generates are what keep the swap from shifting layout.
+ * **`display: 'optional'`, not `'swap'`.**
+ *
+ * With `swap` the browser paints in a fallback and then swaps, and every swap
+ * reflows the text it touches. On a developer machine the fonts are there
+ * before first paint and the shift is invisible; on CI's container it measured
+ * **CLS 0.139 against a 0.02 budget** on a throttled link. The fallback stacks
+ * name `ui-sans-serif` and `ui-monospace`, which resolve to whatever that
+ * machine happens to have — DejaVu in the Playwright image — and Next's
+ * `adjustFontFallback` can only match Arial or Times metrics, neither of which
+ * is a monospace face.
+ *
+ * `optional` removes the swap entirely: the browser uses the font if it is
+ * ready within the block period and otherwise keeps the fallback for that page
+ * load, never re-laying-out. Both faces are preloaded, so in practice they are
+ * used; the cost is that a reader on a genuinely bad connection sees fallback
+ * typography for one visit, which is a better trade than the page moving under
+ * them.
  *
  * `geist` stays in **devDependencies**: nothing imports it at runtime any
  * more, but `scripts/subset-fonts.py` reads the published faces out of
@@ -31,7 +46,7 @@ import localFont from 'next/font/local';
 const geistSans = localFont({
   src: '../assets/fonts/Geist-Variable.subset.woff2',
   variable: '--font-geist-sans',
-  display: 'swap',
+  display: 'optional',
   weight: '100 900',
   fallback: ['ui-sans-serif', 'system-ui', 'sans-serif'],
   preload: true,
@@ -54,7 +69,7 @@ const geistSans = localFont({
 const geistMono = localFont({
   src: '../assets/fonts/GeistMono-Variable.subset.woff2',
   variable: '--font-geist-mono',
-  display: 'swap',
+  display: 'optional',
   weight: '100 900',
   fallback: ['ui-monospace', 'SFMono-Regular', 'monospace'],
   preload: true,

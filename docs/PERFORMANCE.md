@@ -157,6 +157,17 @@ Six milliseconds of LCP for a six-fold CLS overshoot. Restored, and
 as well, so the next regression of this shape fails before a push instead of
 after one.
 
+**That new test then failed too — 0.139 — and the real fix was `font-display`.**
+Preloading narrows the window for a swap; it does not close it. On CI's
+container the fallback stacks resolve to whatever that machine has (DejaVu in
+the Playwright image), and `adjustFontFallback` can only match Arial or Times
+metrics — neither of which is a monospace face. Both faces now use
+**`display: 'optional'`**, which removes the swap by construction: the browser
+uses the font if it is ready within the block period and otherwise keeps the
+fallback for that page load without ever re-laying-out. This is a structural
+guarantee rather than a tuned threshold. The cost is that a reader on a
+genuinely bad connection sees fallback typography for one visit.
+
 ### A below-the-fold image was competing with the hero
 
 The home page's first project cover carried `priority`, which is defensible on

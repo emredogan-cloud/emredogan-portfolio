@@ -14,11 +14,16 @@ test.describe('about section on the home page', () => {
 
   test('hands off to the long-form page', async ({ page }) => {
     await page.goto('/#about');
-    await page
-      .locator('#about')
-      .getByRole('link', { name: /timeline, principles/i })
-      .click();
-    await expect(page).toHaveURL(/\/about$/);
+    const link = page.locator('#about').getByRole('link', { name: /timeline, principles/i });
+
+    // Assert where it points before following it. A click that silently does
+    // nothing and a link that points somewhere else fail identically
+    // otherwise, and on a loaded WebKit runner this click landed before the
+    // router had attached — leaving the page on `/#about` and the failure
+    // reading as if the link were wrong.
+    await expect(link).toHaveAttribute('href', '/about');
+    await link.click();
+    await page.waitForURL('**/about', { timeout: 15_000 });
     await expect(page.getByRole('heading', { level: 1 })).toContainText('About');
   });
 
