@@ -92,6 +92,27 @@ const nextConfig: NextConfig = {
     // Only local assets are used; no remote patterns are allowed.
     remotePatterns: [],
   },
+  /**
+   * `www` redirects to the apex.
+   *
+   * The canonical everywhere on this site — metadata, sitemap, JSON-LD — is
+   * `https://emredogan.work`, so serving the same pages on both hosts would
+   * publish two addresses for one document. Handled here rather than in the
+   * platform's dashboard so it is visible in review, versioned with the code,
+   * and covered by a test.
+   *
+   * Permanent (308), because it is: the apex is the address.
+   */
+  async redirects() {
+    return [
+      {
+        source: '/:path*',
+        has: [{ type: 'host', value: 'www.emredogan.work' }],
+        destination: 'https://emredogan.work/:path*',
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {

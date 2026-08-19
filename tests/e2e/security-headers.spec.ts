@@ -106,3 +106,20 @@ test.describe('security headers', () => {
     expect(refusals, refusals.join(' | ')).toEqual([]);
   });
 });
+
+test.describe('canonical host', () => {
+  test('www redirects to the apex, permanently', async ({ request }) => {
+    // Only meaningful against the real domain; the test server has no host to
+    // match. Skipped rather than silently passing, so the skip is visible.
+    test.skip(
+      !process.env['PLAYWRIGHT_BASE_URL']?.includes('emredogan.work'),
+      'runs against the production domain only',
+    );
+
+    const response = await request.get('https://www.emredogan.work/about', {
+      maxRedirects: 0,
+    });
+    expect(response.status()).toBe(308);
+    expect(response.headers()['location']).toBe('https://emredogan.work/about');
+  });
+});
