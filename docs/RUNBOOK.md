@@ -44,6 +44,25 @@ curl -sI https://emredogan.work/ | grep -i content-security-policy
 Rolling back does **not** revert the repository. Push a revert commit as well,
 or the next deploy re-introduces whatever was rolled back.
 
+### ⚠️ A rollback pins production until you promote
+
+This cost an hour during Phase 14 and is easy to miss: after a manual
+`vercel rollback`, the production alias stays on that deployment. Later pushes
+**build and pass CI but do not go live** — the site simply keeps serving the
+pinned version, with no error anywhere.
+
+```bash
+# Is production the newest deployment?
+npx vercel inspect https://emredogan.work | grep -E '^\s+(url|created)'
+npx vercel ls emredogan-portfolio | head -3
+
+# Release the pin
+npx vercel promote <newest-deployment-url> --yes
+```
+
+The symptom is a change that is merged, green and simply absent from the live
+site.
+
 ## Moving the domain
 
 `emredogan.work` and `www.emredogan.work` are registered at Namecheap and
@@ -121,6 +140,20 @@ curl -sI https://emredogan.work/ | grep -iE 'content-security|strict-transport|x
 TTFB on a **cold** connection reads 600–800 ms and means nothing: it is mostly
 DNS, TCP and TLS. On a warm one it is 180–210 ms, of which about 65 ms is
 server time.
+
+## Checking analytics
+
+Vercel Analytics v2 does **not** inject a `<script src>` — it bundles the
+tracking code and beacons directly, so looking for a `/_vercel/insights/*`
+request finds nothing and proves nothing. Check the globals instead:
+
+```js
+typeof window.va; // "function" when Web Analytics is live
+typeof window.si; // "function" when Speed Insights is live
+```
+
+If both are `undefined`, check `NEXT_PUBLIC_ENABLE_ANALYTICS` — and that it is
+**not** marked Sensitive.
 
 ## When the contact form stops delivering
 
