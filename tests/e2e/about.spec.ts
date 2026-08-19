@@ -22,6 +22,11 @@ test.describe('about section on the home page', () => {
     // router had attached — leaving the page on `/#about` and the failure
     // reading as if the link were wrong.
     await expect(link).toHaveAttribute('href', '/about');
+    // Centre it first. `goto('/#about')` leaves this link near the bottom of
+    // the viewport, and the fixed header sits over the top of the page — a
+    // click that lands under the header is retried until it times out, which
+    // reads as "the link does nothing" rather than "the click missed".
+    await link.scrollIntoViewIfNeeded();
     await link.click();
     await page.waitForURL('**/about', { timeout: 15_000 });
     await expect(page.getByRole('heading', { level: 1 })).toContainText('About');

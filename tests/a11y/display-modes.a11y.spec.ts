@@ -10,6 +10,28 @@ import { describeViolations, scan } from '../support/scan';
  * asserted rather than hoped for.
  */
 test.describe('forced colors (Windows High Contrast)', () => {
+  /*
+   * Chromium and Firefox only, and the reason is not convenience.
+   *
+   * Forced colors is a Windows feature. Safari has no equivalent — it maps the
+   * `forced-colors` media query to macOS "Increase contrast", which is a
+   * different mode with a different contract — and WebKit's Playwright
+   * emulation hands back a **self-contradictory palette**: `CanvasText`
+   * resolves to `#ffffff` (a dark theme's text) while `Canvas` resolves to
+   * `#c0c0c0` (a light theme's silver), giving 1.81:1 for markup that is doing
+   * exactly what the specification asks. Asserting contrast there measures the
+   * emulator, not the site.
+   *
+   * The behaviour is verified on both engines that implement the mode, and
+   * across both palettes it can present: Chromium emulates a light canvas and
+   * Firefox a dark one — which is how the `color-mix` bug in Phase 12 was
+   * caught, since only Firefox's palette exposed it.
+   */
+  test.skip(
+    ({ browserName }) => browserName === 'webkit',
+    'Safari has no Windows High Contrast; the WebKit emulation returns an incoherent palette',
+  );
+
   // `page.emulateMedia`, not `test.use({ forcedColors })`: the fixture form is
   // not in this Playwright version's typed options, and a test that does not
   // compile is a test that does not run.

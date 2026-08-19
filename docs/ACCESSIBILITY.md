@@ -112,12 +112,12 @@ reads against any surface.
 
 ## Display modes
 
-| Mode                                            | Result                                                                                                                                                     |
-| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `prefers-reduced-motion: reduce`                | Still star field, marquee stopped, reveals resolve instantly, smooth scrolling off                                                                         |
-| `forced-colors: active` (Windows High Contrast) | Colour tokens remap to system colours; the decorative canvas is removed; gradient text falls back to `LinkText`; filled buttons gain a `ButtonText` border |
-| `prefers-contrast: more`                        | 0 violations                                                                                                                                               |
-| **400 % zoom** (320×256 CSS viewport)           | All four routes reflow to one column, no horizontal scrolling, nothing lost — WCAG 1.4.10                                                                  |
+| Mode                                            | Result                                                                                                                                                                                                       |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `prefers-reduced-motion: reduce`                | Still star field, marquee stopped, reveals resolve instantly, smooth scrolling off                                                                                                                           |
+| `forced-colors: active` (Windows High Contrast) | Colour tokens remap to system colours; the decorative canvas is removed; gradient text falls back to `LinkText`; filled buttons gain a `ButtonText` border. **Asserted on Chromium and Firefox** — see below |
+| `prefers-contrast: more`                        | 0 violations                                                                                                                                                                                                 |
+| **400 % zoom** (320×256 CSS viewport)           | All four routes reflow to one column, no horizontal scrolling, nothing lost — WCAG 1.4.10                                                                                                                    |
 
 **Forced colors was genuinely broken before Phase 12.** The browser forced the
 page background to the system canvas while the author's text colours survived,
@@ -138,6 +138,25 @@ and links `LinkText` outright, because in this mode the reader's palette is
 supposed to win.
 
 ---
+
+### Why forced colors is not asserted on WebKit
+
+Forced colors is a Windows feature. Safari has no equivalent: it maps the
+`forced-colors` media query to macOS "Increase contrast", a different mode with
+a different contract. WebKit's Playwright emulation additionally returns a
+**self-contradictory palette** — `CanvasText` resolves to `#ffffff` (a dark
+theme's text) while `Canvas` resolves to `#c0c0c0` (a light theme's silver),
+giving 1.81:1 for markup that is doing exactly what the specification asks.
+
+Two rounds of fixes were spent on that number before it became clear the site
+was not the thing failing: first a token remap, then splitting a
+Selectors-Level-4 `:not()` that older parsers discard. Both were genuine
+improvements and neither moved it, because nothing in CSS can reconcile a text
+colour and a surface colour drawn from different themes.
+
+The behaviour is verified on both engines that implement the mode, across both
+palettes it can present — Chromium emulates a light canvas, Firefox a dark one,
+and only Firefox's exposed the `color-mix` bug fixed in Phase 12.
 
 ## Contrast
 
