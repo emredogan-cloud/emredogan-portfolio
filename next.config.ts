@@ -30,7 +30,7 @@ const withBundleAnalyzer = bundleAnalyzer({ enabled: process.env.ANALYZE === 'tr
  * Server Action, so the browser never talks to it — a CSP entry for it would
  * be a hint that the key was in the wrong place.
  */
-const csp = [
+const cspDirectives = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline'",
@@ -41,8 +41,25 @@ const csp = [
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "object-src 'none'",
-  'upgrade-insecure-requests',
-].join('; ');
+];
+
+/**
+ * `upgrade-insecure-requests` is added **only when the request arrived over
+ * HTTPS**, which on Vercel means `x-forwarded-proto: https`.
+ *
+ * Unconditionally, it broke the site on WebKit. Chromium and Firefox exempt
+ * `localhost` from the upgrade; WebKit does not, so against the plain-HTTP test
+ * server every stylesheet and script was requested over `https://127.0.0.1:3100`
+ * and failed — no CSS, no hydration, no canvas, no client-side navigation. CI
+ * showed it as ten unrelated background failures and a navigation timeout,
+ * which is what a broken document looks like from the outside.
+ *
+ * Production is HTTPS-only and HSTS-preloaded, so the directive still applies
+ * everywhere it can matter; every asset is same-origin and relative, so there
+ * is no mixed content for it to upgrade in the first place.
+ */
+const csp = cspDirectives.join('; ');
+const cspSecure = [...cspDirectives, 'upgrade-insecure-requests'].join('; ');
 
 /**
  * `CSP_REPORT_ONLY=1` ships the policy as `Content-Security-Policy-Report-Only`
@@ -76,7 +93,21 @@ const nextConfig: NextConfig = {
     remotePatterns: [],
   },
   async headers() {
-    return [{ source: '/:path*', headers: securityHeaders }];
+    return [
+      {
+        source: '/:path*',
+        has: [{ type: 'header', key: 'x-forwarded-proto', value: 'https' }],
+        headers: [{ key: cspHeaderName, value: cspSecure }, ...securityHeaders.slice(1)],
+      },
+      {
+        // `missing`, not just a fallback. Next applies *every* matching rule
+        // and the last one wins per key, so without this the plain-HTTP rule
+        // overwrote the HTTPS policy it was meant to complement.
+        source: '/:path*',
+        missing: [{ type: 'header', key: 'x-forwarded-proto', value: 'https' }],
+        headers: securityHeaders,
+      },
+    ];
   },
 };
 

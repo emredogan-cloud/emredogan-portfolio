@@ -54,6 +54,31 @@ test.describe('security headers', () => {
     expect(scriptSrc).not.toMatch(/https?:\/\//);
   });
 
+  test('adds upgrade-insecure-requests only on an HTTPS request', async ({ page }) => {
+    /*
+     * Unconditionally, this directive broke the site on WebKit. Chromium and
+     * Firefox exempt `localhost` from the upgrade; WebKit does not, so against
+     * the plain-HTTP test server every stylesheet and script was requested over
+     * `https://127.0.0.1:3100` and failed — no CSS, no hydration, no canvas, no
+     * client-side navigation. CI reported it as ten unrelated background
+     * failures and a navigation timeout, which is what a broken document looks
+     * like from the outside.
+     */
+    const plain = await page.goto('/');
+    expect(plain!.headers()['content-security-policy']).not.toContain('upgrade-insecure-requests');
+
+    const secure = await page.request.get('/', {
+      headers: { 'x-forwarded-proto': 'https' },
+    });
+    expect(secure.headers()['content-security-policy']).toContain('upgrade-insecure-requests');
+
+    // And the rest of the headers survive on the HTTPS path — Next applies
+    // every matching rule and the last one wins per key, so a second rule
+    // silently overwriting the first is the failure mode here.
+    expect(secure.headers()['x-frame-options']).toBe('DENY');
+    expect(secure.headers()['strict-transport-security']).toMatch(/max-age=\d+/);
+  });
+
   test('does not advertise the framework', async ({ page }) => {
     const response = await page.goto('/');
     expect(response!.headers()['x-powered-by']).toBeUndefined();
