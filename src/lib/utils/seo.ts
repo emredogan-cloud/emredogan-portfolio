@@ -55,6 +55,20 @@ export function personJsonLd() {
         jobTitle: site.role,
         description: site.description,
         address: { '@type': 'PostalAddress', addressLocality: 'Adana', addressCountry: 'TR' },
+        /*
+         * One contact point, email only.
+         *
+         * No telephone number is published anywhere on this site, so none is
+         * claimed here either — structured data that says something the page
+         * does not is the same lie in a machine-readable form.
+         */
+        contactPoint: {
+          '@type': 'ContactPoint',
+          contactType: 'Enquiries',
+          email: site.email,
+          availableLanguage: ['en', 'tr'],
+          areaServed: 'Worldwide',
+        },
         sameAs: site.socials.filter((s) => !s.href.startsWith('mailto:')).map((s) => s.href),
         knowsAbout: [
           'Full-stack web development',
@@ -71,6 +85,16 @@ export function personJsonLd() {
         description: site.description,
         inLanguage: 'en',
         publisher: { '@id': `${baseUrl}/#person` },
+        /*
+         * No `SearchAction`.
+         *
+         * §9 of the roadmap lists `WebSite` + `SearchAction`, and the pattern
+         * requires a URL template pointing at a working search endpoint. This
+         * site has no search. Declaring one anyway is how a site ends up with
+         * a Google sitelinks search box that leads nowhere, so the property is
+         * left out and the reason recorded rather than the shape being filled
+         * in for completeness.
+         */
       },
     ],
   };

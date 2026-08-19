@@ -33,12 +33,23 @@ export function Proof() {
           {proof.entries.map((entry, index) => (
             <Reveal key={entry.id} as="li" delay={staggerDelay(index)}>
               <Card interactive className="group flex h-full flex-col p-6">
-                <p className="text-gradient-brand text-[length:var(--text-h2)] leading-none font-bold tracking-tight">
-                  {entry.value}
-                </p>
-                <p className="mt-3 font-mono text-[length:var(--text-eyebrow)] tracking-[0.14em] text-[var(--color-text-faint)] uppercase">
-                  {entry.label}
-                </p>
+                {/*
+                  A heading, not two paragraphs.
+                  An accessibility-tree audit found a reader browsing by
+                  heading jumped from "Don't take my word for it" straight past
+                  all six cards to the next section — the site's entire body of
+                  evidence was invisible to that navigation mode. The value and
+                  the label are one heading, so its accessible name reads
+                  "40 public repositories".
+                */}
+                <h3>
+                  <span className="text-gradient-brand block text-[length:var(--text-h2)] leading-none font-bold tracking-tight">
+                    {entry.value}
+                  </span>
+                  <span className="mt-3 block font-mono text-[length:var(--text-eyebrow)] tracking-[0.14em] text-[var(--color-text-faint)] uppercase">
+                    {entry.label}
+                  </span>
+                </h3>
 
                 <p className="mt-4 flex-1 text-sm text-[var(--color-text-body)]">{entry.detail}</p>
 

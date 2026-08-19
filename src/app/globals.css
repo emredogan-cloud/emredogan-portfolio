@@ -202,6 +202,98 @@
   }
 }
 
+/*
+ * Windows High Contrast.
+ *
+ * The whole design is token-driven, so the correct treatment is to remap the
+ * tokens to system colours once and let every component follow — rather than
+ * patching components one at a time and missing some.
+ *
+ * This is not cosmetic. Without it the browser forces the page background to
+ * the system canvas while the author's text colours survive, and body text
+ * measured **1.58:1** (#c4cede on #ffffff) — text that is technically present
+ * and completely unreadable. axe found it; nobody developing on a normal
+ * display would have.
+ *
+ * `Canvas`, `CanvasText`, `LinkText`, `ButtonFace`, `ButtonText` and
+ * `Highlight` are the system keywords the user's own theme defines, which is
+ * the point: in this mode the reader's palette wins, not the designer's.
+ */
+@media (forced-colors: active) {
+  :root {
+    --color-void: Canvas;
+    --color-surface-1: Canvas;
+    --color-surface-2: Canvas;
+    --color-surface-3: Canvas;
+    --color-glass: Canvas;
+    --color-hairline: CanvasText;
+    --color-hairline-strong: CanvasText;
+
+    --color-text-strong: CanvasText;
+    --color-text-body: CanvasText;
+    --color-text-muted: CanvasText;
+    --color-text-faint: CanvasText;
+
+    --color-brand-blue: Highlight;
+    --color-brand-cyan: Highlight;
+    --color-brand-blue-bright: LinkText;
+    --color-brand-cyan-bright: LinkText;
+    --color-cta-from: ButtonFace;
+    --color-cta-to: ButtonFace;
+
+    --color-positive: CanvasText;
+    --color-warning: CanvasText;
+    --color-danger: CanvasText;
+  }
+
+  /*
+   * Every text colour resolves to the system palette, not just the tokens.
+   *
+   * Remapping the tokens is not sufficient on its own. Several accents are
+   * written as `color-mix(in oklab, var(--color-brand-cyan) 68%, transparent)`
+   * in arbitrary values, and mixing a *system colour keyword* does not
+   * reliably produce one — under Firefox's dark forced palette the principle
+   * numerals resolved to `#164350` on `#1c1b22`, **1.58:1**, and axe reported
+   * 163 nodes. Chromium's emulation uses a light canvas and never showed it,
+   * which is why both engines run this suite.
+   *
+   * In this mode the reader's palette is supposed to win outright, so text is
+   * `CanvasText` and links are `LinkText`, full stop.
+   */
+  body :not(a):not(svg):not(svg *) {
+    color: CanvasText;
+  }
+
+  a {
+    color: LinkText;
+  }
+
+  /* Decorative depth carries no information and cannot survive a forced
+     palette; removing it is clearer than letting it turn into grey mud. */
+  .background-gradient,
+  canvas[data-background-layer] {
+    display: none !important;
+  }
+
+  /* A filled button flattens to the canvas in this mode, so the border is what
+     keeps it a button rather than a run of underlined text. */
+  a[class*='bg-[linear-gradient'],
+  button[class*='bg-[linear-gradient'] {
+    border: 1px solid ButtonText !important;
+    color: ButtonText !important;
+    forced-color-adjust: none;
+    background: ButtonFace !important;
+  }
+
+  /* Cards and inputs need their edges back: `color-mix` borders resolve to
+     something the forced palette does not necessarily keep visible. */
+  input,
+  textarea,
+  [class*='rounded-'] {
+    border-color: CanvasText;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
