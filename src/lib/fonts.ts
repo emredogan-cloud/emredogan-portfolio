@@ -38,13 +38,18 @@ const geistSans = localFont({
 });
 
 /**
- * The mono face is **not** preloaded.
+ * The mono face **is** preloaded, after an experiment that was reverted.
  *
- * It renders eyebrows, pills and metric labels — never the largest element on
- * any page. Preloading both faces put 55 KB in front of the paint on a Slow 4G
- * connection, and the two competed: the sans face is what the LCP paragraph
- * waits for. Discovered through CSS instead, the mono arrives a moment later
- * and swaps in on small text, which is the right place to spend that delay.
+ * Phase 11 dropped its preload on the reasoning that it renders eyebrows,
+ * pills and metric labels — never the largest element — so it was competing
+ * with the sans face for Slow-4G bandwidth. The LCP gain was real but small,
+ * and it came out of the wrong budget: CI measured **CLS 0.1276 against a
+ * 0.02 limit** on the home page, because a late mono swap reflows every pill
+ * and label at once, and Next offers no metrics-matched fallback for a
+ * monospace face (`adjustFontFallback` covers Arial and Times only).
+ *
+ * The trade was 0.4 s of LCP headroom — measured LCP is 1.60 s against a 2.0 s
+ * target — for a six-fold CLS overshoot. Preloaded again.
  */
 const geistMono = localFont({
   src: '../assets/fonts/GeistMono-Variable.subset.woff2',
@@ -52,7 +57,7 @@ const geistMono = localFont({
   display: 'swap',
   weight: '100 900',
   fallback: ['ui-monospace', 'SFMono-Regular', 'monospace'],
-  preload: false,
+  preload: true,
 });
 
 export const fontVariables = `${geistSans.variable} ${geistMono.variable}`;

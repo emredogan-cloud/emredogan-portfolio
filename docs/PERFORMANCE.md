@@ -132,11 +132,30 @@ axis:
 current build and fails if anything falls outside the subset — verified by
 removing `ğ` from the manifest and watching it fail.
 
-### The mono face is no longer preloaded
+### The mono face's preload was dropped, then restored
 
-It renders eyebrows, pills and metric labels — never the largest element on any
-page. Preloading both faces made them compete for the same Slow-4G bandwidth,
-and the sans face is what the LCP paragraph waits for.
+Dropping it looked right: the mono renders eyebrows, pills and metric labels —
+never the largest element on any page — so it was competing with the sans face,
+which is what the LCP paragraph waits for.
+
+**CI rejected it.** Layout shift on the home page went to **0.1276 against a
+0.02 budget**, because a late mono swap reflows every pill and label at once and
+Next offers no metrics-matched fallback for a monospace face
+(`adjustFontFallback` covers Arial and Times only). Locally the same page
+measured 0.0028 — a developer machine has every font before first paint, so the
+regression was invisible here and unmissable on a runner.
+
+Re-measured with the preload restored, the whole trade was **6 ms**:
+
+|                    | LCP (mobile) | CLS (home) |
+| ------------------ | ------------ | ---------- |
+| Mono preloaded     | 1621 ms      | 0.001      |
+| Mono not preloaded | 1615 ms      | **0.128**  |
+
+Six milliseconds of LCP for a six-fold CLS overshoot. Restored, and
+`tests/perf/layout-shift.perf.spec.ts` now measures CLS **on a throttled link**
+as well, so the next regression of this shape fails before a push instead of
+after one.
 
 ### A below-the-fold image was competing with the hero
 
