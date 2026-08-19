@@ -162,8 +162,16 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
-      - name: Lighthouse CI
+      - name: Lighthouse CI — desktop
         run: pnpm exec lhci autorun
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+      # Mobile is the form factor the budget is written for, and it uses
+      # applied throttling rather than Lighthouse's simulation — see
+      # ADR-0011. It is a separate run because a Lighthouse config carries one
+      # form factor.
+      - name: Lighthouse CI — mobile, applied throttling
+        run: pnpm exec lhci autorun --config=lighthouserc.mobile.json
         env:
           LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
 

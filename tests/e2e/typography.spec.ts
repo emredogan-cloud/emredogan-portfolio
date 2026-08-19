@@ -31,7 +31,13 @@ test('renders Turkish glyphs from the loaded face, not a fallback', async ({ pag
     return { turkish, control, resolved };
   });
 
-  expect(result.resolved).toContain('Geist');
+  // The family name comes from `next/font/local`, which derives it from the
+  // export name rather than the file — so it is `geistSans`, not `Geist`, and
+  // asserting the literal published name broke when Phase 11 swapped the
+  // package import for a local subset. What matters is that the *first* family
+  // is ours and not a system fallback.
+  const [primary] = result.resolved.split(',');
+  expect(primary?.trim(), 'text fell back to a system font').toMatch(/geist/i);
   expect(result.turkish).toBeGreaterThan(0);
   // Diacritics change the advance slightly; a font substitution changes it a lot.
   const ratio = result.turkish / result.control;

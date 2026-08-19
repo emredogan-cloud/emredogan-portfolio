@@ -23,10 +23,23 @@ import type { Project } from '@/content/schema';
 export function ProjectCard({
   project,
   priority = false,
+  headingLevel = 'h3',
 }: {
   project: Project;
   priority?: boolean;
+  /**
+   * The card's title level, because the right answer depends on where the card
+   * is.
+   *
+   * On the home page it sits under the Work section's `h2`, so `h3` is
+   * correct. On `/work` it sits directly under the page's `h1`, and `h3` there
+   * skips a level — Lighthouse scored that page 0.98 on accessibility for
+   * exactly this, on a page the axe suite was not scanning. Both gaps are now
+   * closed.
+   */
+  headingLevel?: 'h2' | 'h3';
 }) {
+  const Heading = headingLevel;
   return (
     <Card as="article" interactive className="group flex flex-col overflow-hidden">
       <div className="relative aspect-16/10 overflow-hidden border-b border-[var(--color-hairline)]">
@@ -52,7 +65,7 @@ export function ProjectCard({
 
       <div className="flex flex-1 flex-col p-6">
         <div className="flex items-start justify-between gap-4">
-          <h3 className="text-[length:var(--text-h4)]">
+          <Heading className="text-[length:var(--text-h4)]">
             {/* The stretched link. `before:` covers the card, so the whole
                 surface is clickable while only one link exists. */}
             <Link
@@ -62,7 +75,7 @@ export function ProjectCard({
               {project.name}
               <span className="sr-only"> — read the case study</span>
             </Link>
-          </h3>
+          </Heading>
           <StatusPill status={project.status} />
         </div>
 

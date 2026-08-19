@@ -68,7 +68,13 @@ export default function WorkPage() {
           <ul className="mt-14 grid gap-6 lg:grid-cols-2">
             {orderedProjects.map((project, index) => (
               <Reveal key={project.slug} as="li" delay={staggerDelay(index % 2)}>
-                <ProjectCard project={project} priority={index < 2} />
+                {/* `h2`: on this page a project sits directly under the `h1`,
+                    unlike the home page where the Work section supplies the
+                    intermediate heading. */}
+                {/* One priority cover, not two: on this page the grid is the
+                    content, so the first image is a real LCP candidate — the
+                    second only competes with it. */}
+                <ProjectCard project={project} priority={index === 0} headingLevel="h2" />
               </Reveal>
             ))}
           </ul>

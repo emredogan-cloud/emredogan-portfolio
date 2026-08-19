@@ -277,3 +277,60 @@ overrides OS-level scrolling preferences.
 
 **Consequence.** Revisit only if a pinned or horizontally-scrolled section is
 introduced, and then behind a feature flag with INP measured before and after.
+
+## ADR-0010 — Subset the Geist faces, and keep `geist` as a build-time source
+
+**Date:** 2026-08-19 · **Status:** accepted
+
+The `geist` package ships the published faces: 728 and 889 mapped glyphs,
+including Cyrillic, Greek and box-drawing. This site is written in English with
+Turkish proper nouns. Both faces were preloaded, so **141 KB of font sat on the
+critical path against a 120 KB hard budget** — and more than half of it was for
+scripts that never appear on any page.
+
+**Decision.** `scripts/subset-fonts.py` cuts both faces to the standard `latin`
+and `latin-ext` ranges plus every character the built pages actually render,
+keeping the weight axis. The results are committed to `src/assets/fonts/` and
+loaded with `next/font/local`. **137.7 KB → 78.1 KB**, and every one of the 43
+visual baselines passes untouched.
+
+**Why the subsets are committed rather than generated.** The script needs
+`fonttools`, a Python dependency this project does not otherwise have, and
+regenerating a binary during `next build` would give every machine a different
+bundle hash for no benefit. `geist` therefore stays installed — as a
+**devDependency** and in `knip.json`'s `ignoreDependencies`, because nothing
+imports it any more but the script reads the source faces out of it.
+
+**What keeps this from rotting.** `tests/unit/fonts.test.ts` re-derives the
+rendered character set from the current build and fails if a character is
+rendered that the subset does not cover. Verified by removing `ğ` from the
+manifest and watching the test fail.
+
+**Rejected:** the tighter subset. Dropping layout features and hinting —
+`--layout-features=kern,liga,calt,tnum --no-hinting --desubroutinize`, which is
+the usual advice — reached 55.4 KB and moved forty-one visual baselines. A
+subset should remove glyphs nobody needs, not change how the remaining ones
+rasterise; the 22.7 KB is the price of that guarantee, and the budget has room
+for it.
+
+**Rejected:** `next/font/google`, which subsets automatically but makes every
+build depend on `fonts.googleapis.com` being reachable.
+
+## ADR-0011 — Measure mobile Lighthouse with applied throttling
+
+**Date:** 2026-08-19 · **Status:** accepted
+
+Lighthouse's default `simulate` throttling models a page from its dependency
+graph rather than measuring it. For this page the model produced **2.55 s** of
+LCP, while a real Chromium under the same Slow-4G profile and 4× CPU throttling
+measured **776 ms** for the same element — a threefold difference on the metric
+the budget is written against.
+
+**Decision.** `lighthouserc.mobile.json` sets `throttlingMethod: "devtools"`,
+which applies the throttling for real and reports what happened. Measured LCP
+is **1.60 s**, inside both the 2.0 s target and the 2.5 s hard threshold.
+
+This is not a loosened budget: the threshold is unchanged at 2500 ms, and the
+run is slower and closer to a real device. Both numbers are recorded in
+`docs/PERFORMANCE.md` so the gap between model and measurement stays visible
+rather than being quietly resolved in one direction.

@@ -2,8 +2,8 @@
   "name": "emredogan-portfolio",
   "version": "0.1.0",
   "private": true,
-  "description": "Personal portfolio of Emre Doğan — Full Stack & AI Developer.",
-  "author": "Emre Doğan <emre30283@gmail.com>",
+  "description": "Personal portfolio of Emre Do\u011fan \u2014 Full Stack & AI Developer.",
+  "author": "Emre Do\u011fan <emre30283@gmail.com>",
   "license": "MIT",
   "packageManager": "pnpm@10.33.4",
   "engines": {
@@ -34,12 +34,12 @@
     "verify": "pnpm lint && pnpm typecheck && pnpm format:check && pnpm knip && pnpm test:coverage && pnpm build && pnpm size",
     "prepare": "husky",
     "perf": "playwright test --config=playwright.perf.config.ts",
-    "icons": "node scripts/generate-icons.mjs"
+    "icons": "node scripts/generate-icons.mjs",
+    "lhci:mobile": "lhci autorun --config=lighthouserc.mobile.json"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
-    "geist": "1.7.2",
     "lucide-react": "^1.32.0",
     "next": "16.3.1",
     "react": "19.2.8",
@@ -64,6 +64,7 @@
     "eslint": "9.39.5",
     "eslint-config-next": "16.3.1",
     "eslint-plugin-jsx-a11y": "6.10.2",
+    "geist": "1.7.2",
     "globals": "17.11.0",
     "husky": "^9.1.7",
     "jsdom": "30.0.1",

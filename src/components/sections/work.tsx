@@ -25,9 +25,15 @@ export function Work() {
         <ul className="mt-14 grid gap-6 lg:grid-cols-2">
           {featuredProjects.map((project, index) => (
             <Reveal key={project.slug} as="li" delay={staggerDelay(index)}>
-              {/* The first card is above the fold on a tall desktop viewport,
-                  so its cover is a plausible LCP candidate. */}
-              <ProjectCard project={project} priority={index === 0} />
+              {/* No `priority` here, deliberately.
+                  It was set on the first card because that cover is a
+                  plausible LCP candidate on a tall desktop viewport. On a
+                  phone the Work section is thousands of pixels below the fold,
+                  and the high-priority fetch competed with the hero's font on
+                  a Slow 4G connection — Lighthouse put mobile LCP at 2.63 s
+                  against a 2.5 s limit, with the *hero paragraph* as the LCP
+                  element and this image ahead of it in the waterfall. */}
+              <ProjectCard project={project} />
             </Reveal>
           ))}
         </ul>

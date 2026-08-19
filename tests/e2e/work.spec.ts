@@ -19,7 +19,7 @@ test.describe('work section on the home page', () => {
     // links inside it, which is invalid HTML and announces three overlapping
     // links for one card. The stretched-link pattern gives one case-study link
     // plus any external links as siblings, never nested.
-    const caseStudyLinks = card.locator('h3 a');
+    const caseStudyLinks = card.locator(':is(h2, h3) a');
     await expect(caseStudyLinks).toHaveCount(1);
     const nested = await card.locator('a a').count();
     expect(nested, 'links must not be nested').toBe(0);
@@ -41,7 +41,7 @@ test.describe('work section on the home page', () => {
     // untestable. So: sample points across the card and confirm the element at
     // each one is the case-study anchor.
     const covered = await card.evaluate((element) => {
-      const anchor = element.querySelector('h3 a');
+      const anchor = element.querySelector(':is(h2, h3) a');
       const box = element.getBoundingClientRect();
       const samples: [number, number][] = [
         [0.5, 0.2], // over the cover
@@ -59,7 +59,7 @@ test.describe('work section on the home page', () => {
     expect(covered, 'the stretched link does not cover the card').toEqual([true, true, true, true]);
 
     // And the link itself navigates.
-    await card.locator('h3 a').click();
+    await card.locator(':is(h2, h3) a').click();
     await expect(page).toHaveURL(/\/work\/[a-z-]+$/);
   });
 });
