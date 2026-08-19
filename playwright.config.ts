@@ -25,7 +25,19 @@ export default defineConfig({
   retries: isCI ? 1 : 0,
   workers: isCI ? 2 : undefined,
   reporter: isCI ? [['github'], ['html', { open: 'never' }]] : [['list']],
-  timeout: 45_000,
+  /*
+   * 90 s on CI, 45 s locally.
+   *
+   * Not a way to hide a slow site — the same suites finish in ~70 s locally.
+   * The WebKit job on a shared GitHub runner shares two cores with two workers
+   * and a Node server, and `page.goto` alone was exceeding 45 s once the
+   * cross-browser and security-header suites roughly doubled the number of
+   * navigations that job performs. The product's own timing budgets are
+   * asserted in `tests/perf`, which runs single-worker for exactly this
+   * reason; this number governs how long a starved runner may take before a
+   * test is called failed.
+   */
+  timeout: isCI ? 90_000 : 45_000,
   expect: {
     timeout: 10_000,
     toHaveScreenshot: {
@@ -45,6 +57,7 @@ export default defineConfig({
   },
   use: {
     baseURL,
+    navigationTimeout: isCI ? 60_000 : 30_000,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'off',
