@@ -200,6 +200,33 @@ export const aboutSchema = z.object({
   credentials: z.array(credentialSchema).min(2),
 });
 export type About = z.infer<typeof aboutSchema>;
+
+/**
+ * A proof entry.
+ *
+ * `verifyUrl` is required and must be absolute: the entire point of this
+ * section is that a stranger can check the claim without trusting the person
+ * making it. A claim with nowhere to go is a testimonial with extra steps.
+ */
+const proofSchema = z.object({
+  id: z.string().min(1),
+  value: z.string().min(1),
+  label: z.string().min(3),
+  detail: z.string().min(20),
+  /** How the number was obtained, so the reader can reproduce it. */
+  method: z.string().min(20),
+  verifyUrl: z.string().url(),
+  verifyLabel: z.string().min(3),
+});
+
+export const proofSectionSchema = z.object({
+  /** Stated plainly, because the absence is itself information. */
+  disclosure: z.string().min(60),
+  /** ISO date on which every `verifyUrl` below was last checked by hand. */
+  verifiedOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  entries: z.array(proofSchema).min(3),
+});
+export type ProofSection = z.infer<typeof proofSectionSchema>;
 export type Capability = z.infer<typeof capabilitySchema>;
 export type Credential = z.infer<typeof credentialSchema>;
 

@@ -20,6 +20,8 @@ const REGIONS = [
   { name: 'stack', selector: 'section[aria-labelledby="stack-heading"]' },
   { name: 'about', selector: '#about' },
   { name: 'work', selector: '#work' },
+  { name: 'proof', selector: '#proof' },
+  { name: 'cta', selector: 'section[aria-labelledby="cta-heading"]' },
   { name: 'contact', selector: '#contact' },
   { name: 'footer', selector: 'footer' },
 ] as const;

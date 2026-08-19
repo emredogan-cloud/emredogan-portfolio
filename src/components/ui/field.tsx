@@ -15,6 +15,14 @@ interface FieldProps {
   hint?: string;
   defaultValue?: string;
   rows?: number;
+  /** Passed through so the browser can fill known values. */
+  autoComplete?: string;
+  /**
+   * Mirrors the server's limit. A courtesy that saves a round trip — the
+   * authoritative check is the Zod schema in the Server Action, which does not
+   * trust this or any other attribute.
+   */
+  maxLength?: number;
   className?: string;
 }
 
@@ -41,6 +49,8 @@ export function Field({
   hint,
   defaultValue,
   rows = 5,
+  autoComplete,
+  maxLength,
   className,
 }: FieldProps) {
   const id = useId();
@@ -54,6 +64,8 @@ export function Field({
     required,
     placeholder,
     defaultValue,
+    autoComplete,
+    maxLength,
     'aria-invalid': error ? (true as const) : undefined,
     'aria-describedby': describedBy || undefined,
     className: cn(

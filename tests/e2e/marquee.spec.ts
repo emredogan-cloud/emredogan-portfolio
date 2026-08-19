@@ -7,21 +7,62 @@ async function offset(page: Page): Promise<number> {
   return page.locator(track).evaluate((el) => new DOMMatrix(getComputedStyle(el).transform).m41);
 }
 
+/** The width of one copy of the strip — the distance after which it wraps. */
+async function loopWidth(page: Page): Promise<number> {
+  return page
+    .locator(`${track} > ul`)
+    .first()
+    .evaluate((el) => (el as HTMLElement).offsetWidth);
+}
+
+/**
+ * How far the strip has travelled leftwards, allowing for the wrap.
+ *
+ * Reading the raw offset and asserting "smaller than before" looks obvious and
+ * is wrong. The offset is wrapped into `[-loopWidth, 0]`, so if the first
+ * sample lands just before a wrap, the next one is *larger* — and getting back
+ * below it takes a full loop, roughly fifteen seconds. The test then fails with
+ * "it never moved" while the strip is moving perfectly well in front of you.
+ * Measuring distance travelled removes the sampling accident.
+ */
+function travelled(from: number, to: number, loop: number): number {
+  const raw = from - to;
+  return raw >= 0 ? raw : raw + loop;
+}
+
 /**
  * Waits until the strip stops moving, then returns where it stopped.
  *
  * Frame-rate independent by construction: it watches for the offset to hold
  * still across consecutive samples instead of assuming how long the ramp takes
  * on this engine.
+ *
+ * **"Still" means still, not nearly still.** An earlier version accepted a
+ * change under 0.5 px between 250 ms samples, which is 2 px/s — so it returned
+ * while the strip was visibly decelerating, and the caller's "it has not moved
+ * since" assertion then failed by 2 px on WebKit in CI. The velocity ramp is
+ * exponential and asymptotic, so any loose threshold has that bug at some
+ * frame rate.
+ *
+ * The engine gives an exact condition to wait for instead: below 0.05 px/s it
+ * stops writing the transform altogether, and it writes with two decimals. So
+ * a change under 0.01 px between samples means the write has stopped, not that
+ * it has slowed down.
+ *
+ * The timeout is generous because the loop clamps each frame's delta to 50 ms.
+ * On a headless engine delivering a handful of frames a second, the ramp's
+ * 1.8 s of simulated time can take several times that in wall-clock — the
+ * clamp is protecting a resumed tab from jumping, and a starved CI runner
+ * looks exactly like a resumed tab.
  */
-async function settleOffset(page: Page, timeout = 10_000): Promise<number> {
+async function settleOffset(page: Page, timeout = 20_000): Promise<number> {
   const deadline = Date.now() + timeout;
   let previous = await offset(page);
 
   while (Date.now() < deadline) {
     await page.waitForTimeout(250);
     const current = await offset(page);
-    if (Math.abs(current - previous) < 0.5) return current;
+    if (Math.abs(current - previous) < 0.01) return current;
     previous = current;
   }
 
@@ -54,8 +95,17 @@ test.describe('technology marquee', () => {
     await page.goto('/');
     await page.locator(track).scrollIntoViewIfNeeded();
 
+    const loop = await loopWidth(page);
+    expect(loop, 'the strip has no width, so nothing can be measured').toBeGreaterThan(100);
+
     const first = await offset(page);
-    await expect.poll(() => offset(page), { timeout: 6_000, intervals: [150] }).toBeLessThan(first);
+    await expect
+      .poll(() => offset(page).then((now) => travelled(first, now, loop)), {
+        message: 'the strip never advanced leftwards',
+        timeout: 8_000,
+        intervals: [150],
+      })
+      .toBeGreaterThan(20);
   });
 
   test('the pause control stops it, and says so', async ({ page }) => {
@@ -69,14 +119,8 @@ test.describe('technology marquee', () => {
     await control.click();
     await expect(control).toHaveAccessibleName(/^play technology strip animation$/i);
 
-    // Poll until it has come to rest, rather than assuming a fixed settle time.
-    //
-    // The velocity decays exponentially over a ~0.7 s ramp, but the loop clamps
-    // each frame's delta to 50 ms so a resumed tab cannot jump. On a headless
-    // engine delivering ~9 frames a second that clamp makes the decay advance
-    // slower than wall-clock, so a fixed 1.4 s wait left 2 px of residual drift
-    // on WebKit while Chromium had long since stopped. Waiting for the actual
-    // condition tests the contract — pausing stops it — at any frame rate.
+    // Wait for the actual condition rather than a fixed settle time: the
+    // contract is "pausing stops it", and that has to hold at any frame rate.
     const settled = await settleOffset(page);
     await page.waitForTimeout(700);
     expect(Math.abs((await offset(page)) - settled)).toBeLessThan(1);
@@ -84,7 +128,15 @@ test.describe('technology marquee', () => {
     // And it resumes.
     await control.click();
     await expect(control).toHaveAccessibleName(/^pause technology strip animation$/i);
-    await expect.poll(() => offset(page), { timeout: 6_000 }).toBeLessThan(settled - 1);
+    // Wrap-aware, for the same reason as the movement test above.
+    const loop = await loopWidth(page);
+    await expect
+      .poll(() => offset(page).then((now) => travelled(settled, now, loop)), {
+        message: 'the strip did not resume',
+        timeout: 8_000,
+        intervals: [150],
+      })
+      .toBeGreaterThan(5);
   });
 
   test('the pause control is reachable and operable by keyboard', async ({ page }) => {

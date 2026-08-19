@@ -13,7 +13,12 @@ test.describe('home page', () => {
 
     await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Emre');
-    await expect(page.getByRole('link', { name: /GitHub/i })).toBeVisible();
+    // Scoped to the footer: since Phase 9 the contact section links GitHub too,
+    // and an unscoped match is a strict-mode violation rather than a stronger
+    // assertion.
+    await expect(
+      page.getByRole('contentinfo').getByRole('link', { name: /GitHub/i }),
+    ).toBeVisible();
 
     expect(errors, `console errors: ${errors.join(' | ')}`).toEqual([]);
   });
