@@ -275,7 +275,19 @@
     background-color: Canvas;
   }
 
-  body :not(a):not(svg):not(svg *) {
+  /*
+   * Split into selectors every engine can parse.
+   *
+   * This was one rule — `body :not(a):not(svg):not(svg *)`. A complex selector
+   * inside `:not()` is Selectors Level 4, and an engine that does not parse it
+   * discards the **whole rule**, so no colour override applied at all: WebKit
+   * kept the design's white text over a silver forced canvas, 1.81:1 across
+   * 163 nodes, and reported it as a contrast failure rather than a parse
+   * error. A CSS rule that silently disappears is the worst kind of bug to
+   * find from the outside.
+   */
+  body,
+  body * {
     color: #000000;
     color: CanvasText;
   }
@@ -283,6 +295,10 @@
   a {
     color: #00006e;
     color: LinkText;
+  }
+
+  svg {
+    fill: currentColor;
   }
 
   /* Decorative depth carries no information and cannot survive a forced
