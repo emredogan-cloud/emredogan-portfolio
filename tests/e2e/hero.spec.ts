@@ -1,4 +1,19 @@
 import { expect, test } from '@playwright/test';
+import { hero } from '@/content/hero';
+
+/**
+ * The published commit total, read from the content module rather than
+ * repeated here.
+ *
+ * It was hardcoded as "1,113" in three assertions, and when the figure was
+ * corrected — the original counted `HEAD` across repositories with feature
+ * branches checked out, so it included unmerged work — all three failed at
+ * once and each had to be edited by hand. A number the site derives should be
+ * derived by the test too; what is worth asserting is that the *rendered*
+ * value matches the source, not that it equals a literal somebody typed twice.
+ */
+const COMMIT_STAT = hero.stats.find((stat) => stat.label === 'commits')!;
+const COMMITS = COMMIT_STAT.value;
 
 test.describe('hero', () => {
   test('the headline is one h1 and is in the initial HTML', async ({ page }) => {
@@ -23,8 +38,9 @@ test.describe('hero', () => {
       expect(text.length).toBeGreaterThan(40);
     }
 
-    await expect(page.locator('[data-count-up]').first()).toHaveText('1,113');
-    await expect(page.getByText('Counted with git rev-list')).toBeVisible();
+    await expect(page.locator('[data-count-up]').first()).toHaveText(COMMITS);
+    // The rendered method must be the one the content module states, verbatim.
+    await expect(page.locator('dl dd').first()).toContainText(COMMIT_STAT.evidence);
   });
 
   test('the count-up ends on the true value and is readable to a screen reader', async ({
@@ -34,8 +50,8 @@ test.describe('hero', () => {
     const commits = page.locator('dl dd').first();
     // The accessible text is the final value from the first paint — the
     // animated digits are aria-hidden.
-    await expect(commits).toContainText('1,113');
-    await expect.poll(() => commits.locator('[data-count-up]').textContent()).toBe('1,113');
+    await expect(commits).toContainText(COMMITS);
+    await expect.poll(() => commits.locator('[data-count-up]').textContent()).toBe(COMMITS);
   });
 
   test('the count-up renders the final value immediately under reduced motion', async ({
@@ -44,7 +60,7 @@ test.describe('hero', () => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/');
     const value = await page.locator('[data-count-up]').first().textContent();
-    expect(value).toBe('1,113');
+    expect(value).toBe(COMMITS);
   });
 
   test('the count-up reserves its width so nothing shifts while counting', async ({ page }) => {

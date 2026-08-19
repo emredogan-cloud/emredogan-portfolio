@@ -1,6 +1,7 @@
 import 'server-only';
 
-import { heroSchema, parseContent, projectSchema, siteSchema } from './schema';
+import { aboutSchema, heroSchema, parseContent, projectSchema, siteSchema } from './schema';
+import { about } from './about';
 import { hero } from './hero';
 import { projects } from './projects';
 import { site } from './site';
@@ -19,6 +20,7 @@ import { site } from './site';
  */
 parseContent(siteSchema, site, 'site');
 parseContent(heroSchema, hero, 'hero');
+parseContent(aboutSchema, about, 'about');
 
 projects.forEach((project, index) => {
   parseContent(projectSchema, project, `projects[${index}]`);

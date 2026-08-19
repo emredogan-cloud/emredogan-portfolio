@@ -63,6 +63,41 @@ describe('colour contrast (WCAG 2.2 AA)', () => {
   });
 });
 
+describe('semi-transparent accents composited on their surface', () => {
+  /**
+   * `color-mix(in oklab, <colour> P%, transparent)` paints at alpha P/100, so
+   * what the reader actually sees is the colour blended into whatever is
+   * behind it. The mix percentage is read out of the component rather than
+   * repeated here — the failure this guards against is somebody dialling the
+   * number down because the numeral "looked loud", which is exactly how it
+   * shipped at 38% and drew four serious axe violations at 2.46:1.
+   *
+   * Measured against the *normal-text* floor even though the numeral renders
+   * large on a wide screen. `--text-h3` is `clamp(1.375rem, …)`, so at 390 px
+   * it computes to 22.32 px — below the 24 px threshold for large text. A
+   * fluid ramp can move a colour from one WCAG threshold to the other without
+   * anyone touching the colour, and 60% passed at 1440 px while failing at
+   * 390 px for exactly that reason.
+   */
+  function mixPercent(file: string): number {
+    const source = readFileSync(join(process.cwd(), file), 'utf8');
+    const match = source.match(
+      /color-mix\(in_oklab,var\(--color-brand-cyan\)_(\d+)%,transparent\)/,
+    );
+    if (!match?.[1]) throw new Error(`No cyan mix found in ${file}`);
+    return Number(match[1]);
+  }
+
+  it.each(['surface-1', 'surface-2'])(
+    'the principle numeral clears the normal-text floor on %s',
+    (surface) => {
+      const percent = mixPercent('src/components/about/principles.tsx');
+      const composited = mixHex(token(surface), token('brand-cyan'), percent / 100);
+      expect(contrastRatio(composited, token(surface))).toBeGreaterThanOrEqual(WCAG_AA_NORMAL);
+    },
+  );
+});
+
 describe('contrast primitives', () => {
   it('matches the canonical extremes', () => {
     expect(contrastRatio('#ffffff', '#000000')).toBeCloseTo(21, 5);

@@ -71,7 +71,22 @@ export function Reveal({
           observer.disconnect();
         }
       },
-      { rootMargin: '0px 0px -12% 0px' },
+      // The top margin is enormous on purpose.
+      //
+      // `IntersectionObserver` reports a *change* of state. An element that
+      // goes from below the fold to above the viewport in one frame — an
+      // anchor jump, a restored scroll position, `scrollIntoView` — is not
+      // intersecting at either end, so no callback ever runs and it stays at
+      // `opacity: 0` for the rest of the session. Under
+      // `prefers-reduced-motion: reduce` the document scrolls with
+      // `behavior: auto`, which makes every nav click exactly that jump: click
+      // Contact, scroll back, and the sections in between are blank.
+      //
+      // Extending the root upward makes "already passed" intersect, so the
+      // element reveals instead of being lost. The negative bottom margin is
+      // unchanged, so content below the fold still waits its turn — that is
+      // what `tests/e2e/reveal-jump.spec.ts` pins down in both directions.
+      { rootMargin: '100000px 0px -12% 0px' },
     );
 
     observer.observe(node);

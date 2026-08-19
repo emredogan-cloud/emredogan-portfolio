@@ -8,12 +8,21 @@ import type { Hero } from './schema';
  * not a statistic. Every number here was counted on 18 August 2026 and carries
  * the method that produced it:
  *
- *  - **1,113 commits** — `git rev-list --count HEAD` summed across the six of
- *    these projects that are under version control (Evolutionary Tycoon 56,
- *    FormAI 604, PawDoc 118, Ehliyet Akademi 261, Lumina 18, FormAI Web 56).
- *  - **8 projects** — the eight presented on this site.
- *  - **3 live** — returned HTTP 200 when checked: ehliyetegitim.com,
- *    evolutionary-tycoon.vercel.app, web-form-ai.vercel.app.
+ *  - **1,068 commits** — `git rev-list --count <default-branch>` summed across
+ *    the six of these projects under version control: Evolutionary Tycoon 43,
+ *    FormAI 604, PawDoc 109, Ehliyet Akademi 238, Lumina 18, FormAI Web 56.
+ *
+ *    The *default branch* specifically. An earlier version of this figure said
+ *    1,113 because it counted `HEAD`, and three of the six repositories had a
+ *    feature branch checked out — so the number included unmerged work and
+ *    moved when a branch advanced. Counting the default branch is what anyone
+ *    cloning the repositories would reproduce.
+ *
+ *  - **8 projects** — the eight presented on this site. Asserted against
+ *    `projects.length` by a test, so the two cannot drift.
+ *  - **3 live or released** — Ehliyet Akademi and FormAI Web return HTTP 200;
+ *    PawDoc has an approved production release. Asserted against the project
+ *    statuses by a test.
  *
  * Not claimed, because there is no evidence for it: years of experience,
  * employers, client count, revenue, downloads, or user numbers.
@@ -29,9 +38,10 @@ export const hero: Hero = {
   secondaryCta: { label: 'Get in touch', href: '/#contact' },
   stats: [
     {
-      value: '1,113',
+      value: '1,068',
       label: 'commits',
-      evidence: 'Counted with git rev-list across the six of these projects under version control.',
+      evidence:
+        'git rev-list on the default branch of the six of these projects under version control. Five are public.',
       verifyUrl: 'https://github.com/emredogan-cloud',
     },
     {
@@ -42,8 +52,9 @@ export const hero: Hero = {
     },
     {
       value: '3',
-      label: 'live in production',
-      evidence: 'Reachable over the public internet and verified returning HTTP 200.',
+      label: 'live or released',
+      evidence:
+        'Two reachable over the public internet and verified at HTTP 200; one approved production release.',
       verifyUrl: 'https://www.ehliyetegitim.com',
     },
   ],

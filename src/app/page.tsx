@@ -1,3 +1,4 @@
+import { About } from '@/components/sections/about';
 import { Hero } from '@/components/sections/hero';
 import { TechMarquee } from '@/components/sections/tech-marquee';
 import { Work } from '@/components/sections/work';
@@ -10,10 +11,10 @@ import { site } from '@/content/site';
 /**
  * The single-page experience.
  *
- * Section shells land in Phase 3 so the navigation, scroll-spy and anchor
- * behaviour can be built and tested against real targets. The contents of each
- * arrive in Phases 4 and 7–9; what is here is real, not placeholder copy that
- * would have to be retracted.
+ * Four anchored sections, in the order a stranger needs them: who, what with,
+ * what shipped, how to reach him. The contact section is still the shell built
+ * in Phase 3 — the validated form lands in Phase 9 — and until then it offers a
+ * working mailto rather than placeholder copy that would have to be retracted.
  */
 export default function HomePage() {
   return (
@@ -22,19 +23,7 @@ export default function HomePage() {
 
       <TechMarquee />
 
-      <Section id="about" labelledBy="about-heading" glow="left-blue">
-        <div className="container-content">
-          <Reveal>
-            <SectionHeading
-              id="about-heading"
-              eyebrow="About"
-              lead="How I"
-              accent="work"
-              description="Long-form profile, principles and experience timeline land in Phase 8."
-            />
-          </Reveal>
-        </div>
-      </Section>
+      <About />
 
       <Work />
 

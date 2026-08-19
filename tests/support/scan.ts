@@ -111,4 +111,25 @@ export async function prepareForSnapshot(page: Page, url: string): Promise<void>
   await page.goto(`${target.pathname}${target.search}`);
   await page.waitForLoadState('networkidle');
   await settlePage(page);
+  await decodeImages(page);
+}
+
+/**
+ * Waits until every image has actually been decoded, not merely downloaded.
+ *
+ * `networkidle` says the bytes arrived; it says nothing about whether the
+ * decoder has produced a bitmap. Under a loaded runner the work section's
+ * covers were still undecoded when the baseline was captured, so that one test
+ * failed in a full-suite run and passed on its own — the signature of a race,
+ * and the kind of flake that gets a real regression waved through as "just the
+ * visual test again".
+ *
+ * `decode()` on an already-decoded image resolves immediately, and a failed
+ * decode is swallowed here: a broken image is the business of the tests that
+ * assert on images, not of every baseline.
+ */
+async function decodeImages(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    await Promise.all([...document.images].map((image) => image.decode().catch(() => undefined)));
+  });
 }

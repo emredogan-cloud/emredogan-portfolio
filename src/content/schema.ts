@@ -147,11 +147,61 @@ export type Hero = z.infer<typeof heroSchema>;
 
 export { heroSchema };
 
-/**
- * Schemas for capabilities, principles, timeline entries and skill groups are
- * added by the phases that render them (8–9) rather than declared up front —
- * an unused schema is a promise the compiler cannot keep.
- */
+// ── About ───────────────────────────────────────────────────────────────────
+
+const principleSchema = z.object({
+  index: z.string().regex(/^\d{2}$/),
+  title: z.string().min(3),
+  body: z.string().min(30),
+});
+
+const capabilitySchema = z.object({
+  title: z.string().min(3),
+  body: z.string().min(60),
+  tech: z.array(z.string().min(1)).min(1),
+  icon: z.enum(['cloud', 'brain', 'layers', 'smartphone', 'code', 'book']),
+});
+
+const timelineEntrySchema = z.object({
+  id: z.string().min(1),
+  period: z.string().min(3),
+  title: z.string().min(2),
+  context: z.string().min(3),
+  body: z.string().min(60),
+  /**
+   * What makes the entry checkable. Required: a timeline of unfalsifiable
+   * claims is a CV, not a record.
+   */
+  evidence: z.array(z.string().min(2)).min(1),
+  /** Links to the project page where one exists. */
+  projectSlug: z.string().nullable(),
+});
+
+const credentialSchema = z.object({
+  id: z.string().min(1),
+  /**
+   * `held` is reserved for a credential actually in hand. `target` is a stated
+   * intention. `shipped` is a thing a stranger can verify for themselves —
+   * which a live domain is and a PDF certificate is not.
+   */
+  kind: z.enum(['held', 'target', 'shipped']),
+  title: z.string().min(3),
+  issuer: z.string().min(2),
+  date: z.string().min(3),
+  detail: z.string().min(20),
+  verifyUrl: z.string().url().nullable(),
+});
+
+export const aboutSchema = z.object({
+  intro: z.array(z.string().min(60)).min(2),
+  principles: z.array(principleSchema).min(3),
+  capabilities: z.array(capabilitySchema).min(3),
+  timeline: z.array(timelineEntrySchema).min(3),
+  credentials: z.array(credentialSchema).min(2),
+});
+export type About = z.infer<typeof aboutSchema>;
+export type Capability = z.infer<typeof capabilitySchema>;
+export type Credential = z.infer<typeof credentialSchema>;
 
 /** Parses and throws with a readable path on failure. */
 export function parseContent<T extends z.ZodTypeAny>(
