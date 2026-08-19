@@ -19,7 +19,10 @@ export function Footer() {
       <div className="container-content py-16">
         <div className="grid gap-12 md:grid-cols-[1.5fr_1fr_1fr]">
           <div>
-            <Link href="/" className="text-xl font-bold text-[var(--color-text-strong)]">
+            <Link
+              href="/"
+              className="inline-flex min-h-11 items-center text-xl font-bold text-[var(--color-text-strong)]"
+            >
               {site.shortName}
               <span className="text-gradient-brand">.dev</span>
             </Link>
@@ -36,12 +39,16 @@ export function Footer() {
             >
               Navigate
             </h2>
-            <ul className="mt-5 flex flex-col gap-3">
+            {/* `gap-1` with the height coming from each link's own padding.
+                A 44 px target plus a 12 px gap would make the column
+                needlessly tall; this way the rows touch and every one of them
+                is still a full target. */}
+            <ul className="mt-3 flex flex-col gap-1">
               {[...footerNav.navigate, ...footerNav.more].map((item) => (
                 <li key={item.id}>
                   <Link
                     href={item.href}
-                    className="text-[var(--color-text-muted)] underline-offset-4 transition-colors duration-[var(--duration-fast)] hover:text-[var(--color-text-strong)] hover:underline"
+                    className="inline-flex min-h-11 min-w-11 items-center text-[var(--color-text-muted)] underline-offset-4 transition-colors duration-[var(--duration-fast)] hover:text-[var(--color-text-strong)] hover:underline"
                   >
                     {item.label}
                   </Link>

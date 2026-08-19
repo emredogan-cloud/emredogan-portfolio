@@ -65,19 +65,34 @@ export function Hero() {
               </Button>
             </div>
 
-            <dl className="mt-14 grid max-w-lg grid-cols-3 gap-6">
+            {/*
+              Three rows on a phone, three columns from `sm` up.
+
+              Not a shrunken desktop layout: at 360 px the three-column version
+              gave each statistic about 110 px, which wrapped its method note
+              into a nine-line ribbon of four-word lines. The number is the
+              headline and the method is the fine print, so on a narrow screen
+              they read best side by side — number and label on the left, method
+              filling the rest of the width.
+            */}
+            <dl className="mt-14 flex max-w-lg flex-col gap-5 sm:grid sm:grid-cols-3 sm:gap-6">
               {hero.stats.map((stat) => (
-                <div key={stat.label}>
+                <div
+                  key={stat.label}
+                  className="grid grid-cols-[8.5rem_minmax(0,1fr)] items-baseline gap-x-4 border-b border-[var(--color-hairline)] pb-4 last:border-0 last:pb-0 sm:block sm:border-0 sm:pb-0"
+                >
                   <dt className="sr-only">{stat.label}</dt>
-                  <dd>
-                    <CountUp
-                      value={stat.value}
-                      className="block text-[length:var(--text-h2)] leading-none font-bold text-[var(--color-brand-blue-bright)]"
-                    />
-                    <span className="mt-2 block text-sm text-[var(--color-text-muted)]">
-                      {stat.label}
+                  <dd className="contents sm:block">
+                    <span className="block">
+                      <CountUp
+                        value={stat.value}
+                        className="block text-[length:var(--text-h2)] leading-none font-bold text-[var(--color-brand-blue-bright)]"
+                      />
+                      <span className="mt-1.5 block text-sm text-[var(--color-text-muted)] sm:mt-2">
+                        {stat.label}
+                      </span>
                     </span>
-                    <span className="mt-1 block text-xs text-[var(--color-text-faint)]">
+                    <span className="block text-xs text-[var(--color-text-faint)] sm:mt-1">
                       {stat.evidence}
                     </span>
                   </dd>

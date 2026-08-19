@@ -68,7 +68,7 @@ export function Header() {
         >
           <Link
             href="/"
-            className="text-lg font-bold tracking-tight text-[var(--color-text-strong)]"
+            className="inline-flex min-h-11 items-center text-lg font-bold tracking-tight text-[var(--color-text-strong)]"
           >
             {site.shortName}
             <span className="text-gradient-brand">.dev</span>
@@ -85,7 +85,7 @@ export function Header() {
                       href={item.href}
                       aria-current={active ? 'true' : undefined}
                       className={cn(
-                        'relative rounded-[var(--radius-sm)] px-3.5 py-2 text-sm font-medium',
+                        'relative inline-flex min-h-11 items-center rounded-[var(--radius-sm)] px-3.5 text-sm font-medium',
                         'transition-colors duration-[var(--duration-fast)]',
                         active
                           ? 'text-[var(--color-text-strong)]'
@@ -96,7 +96,7 @@ export function Header() {
                       <span
                         aria-hidden
                         className={cn(
-                          'absolute inset-x-3.5 -bottom-0.5 h-px origin-center rounded-full',
+                          'absolute inset-x-3.5 bottom-1.5 h-px origin-center rounded-full',
                           'bg-[linear-gradient(90deg,var(--color-brand-blue-bright),var(--color-brand-cyan-bright))]',
                           'transition-transform duration-[var(--duration-base)] ease-[var(--ease-out-expo)]',
                           active ? 'scale-x-100' : 'scale-x-0',
@@ -110,7 +110,9 @@ export function Header() {
           </nav>
 
           <div className="flex items-center gap-2">
-            <Button href="/#contact" size="sm" className="hidden sm:inline-flex">
+            {/* `md` (44 px) rather than `sm` (36 px): this is a touch target
+                on every viewport where it is shown. */}
+            <Button href="/#contact" size="md" className="hidden sm:inline-flex">
               Let&rsquo;s talk
             </Button>
             <button

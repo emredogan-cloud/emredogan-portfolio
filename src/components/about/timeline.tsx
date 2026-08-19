@@ -55,7 +55,7 @@ export function Timeline() {
               {entry.projectSlug ? (
                 <Link
                   href={`/work/${entry.projectSlug}`}
-                  className="group inline-flex items-center gap-2 underline-offset-4 hover:underline"
+                  className="group inline-flex min-h-11 items-center gap-2 underline-offset-4 hover:underline"
                 >
                   {entry.title}
                   <ArrowRight

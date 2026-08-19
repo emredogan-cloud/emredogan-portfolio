@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { prepareForSnapshot } from '../support/scan';
+import { hideFixedOverlays, prepareForSnapshot } from '../support/scan';
 
 /**
  * Visual baselines, captured **per region rather than as one full-page image**.
@@ -37,6 +37,7 @@ for (const viewport of VIEWPORTS) {
       test(region.name, async ({ page }) => {
         await page.setViewportSize({ width: viewport.width, height: viewport.height });
         await prepareForSnapshot(page, '/');
+        await hideFixedOverlays(page);
         await expect(page.locator(region.selector)).toHaveScreenshot(
           `${region.name}-${viewport.label}.png`,
         );

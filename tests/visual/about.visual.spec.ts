@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { prepareForSnapshot } from '../support/scan';
+import { hideFixedOverlays, prepareForSnapshot } from '../support/scan';
 
 /**
  * About baselines.
@@ -20,12 +20,14 @@ test.describe('about', () => {
     test(`timeline — ${label}`, async ({ page }) => {
       await page.setViewportSize({ width, height });
       await prepareForSnapshot(page, '/about');
+      await hideFixedOverlays(page);
       await expect(page.locator('#timeline')).toHaveScreenshot(`timeline-${label}.png`);
     });
 
     test(`credentials — ${label}`, async ({ page }) => {
       await page.setViewportSize({ width, height });
       await prepareForSnapshot(page, '/about');
+      await hideFixedOverlays(page);
       await expect(page.locator('#credentials')).toHaveScreenshot(`credentials-${label}.png`);
     });
   }

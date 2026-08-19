@@ -133,3 +133,28 @@ async function decodeImages(page: Page): Promise<void> {
     await Promise.all([...document.images].map((image) => image.decode().catch(() => undefined)));
   });
 }
+
+/**
+ * Hides the fixed overlays for a region baseline.
+ *
+ * A `position: fixed` header sits wherever the viewport happens to be when
+ * Playwright scrolls an element into view, so it lands at a different height
+ * inside the captured region from one run to the next. The result is a
+ * baseline that fails intermittently on a band of pixels that has nothing to
+ * do with the region under test — and a flaky visual test is worse than none,
+ * because it teaches everyone to re-record without looking.
+ *
+ * The header is not going untested: it has its own baselines (`nav-top`,
+ * `nav-island`) and appears in the viewport composites, which is where it
+ * belongs.
+ */
+export async function hideFixedOverlays(page: Page): Promise<void> {
+  // `display: none`, not `visibility: hidden`. The island's inner panel
+  // carries `transition-all`, and `all` includes `visibility` — so hiding it
+  // starts a 350 ms transition and the element is still painted when the
+  // screenshot is taken. Taking it out of the box tree has no such window, and
+  // the header is `position: fixed`, so removing it shifts nothing.
+  await page.addStyleTag({
+    content: 'header, .scroll-progress { display: none !important; }',
+  });
+}

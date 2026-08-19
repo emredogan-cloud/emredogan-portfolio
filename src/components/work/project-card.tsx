@@ -82,14 +82,18 @@ export function ProjectCard({
         </ul>
 
         {project.links.length > 0 ? (
-          <ul className="relative z-20 mt-6 flex flex-wrap gap-x-5 gap-y-2 border-t border-[var(--color-hairline)] pt-5">
+          <ul className="relative z-20 mt-6 flex flex-wrap gap-x-5 border-t border-[var(--color-hairline)] pt-2">
+            {/* Each row is 44 px tall and the list's own top padding drops to
+                match: these links sit over the stretched link covering the
+                card, so they have to be comfortably hittable without the card
+                growing a dead band underneath them. */}
             {project.links.map((link) => (
               <li key={link.href}>
                 <a
                   href={link.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-sm text-[var(--color-text-body)] underline-offset-4 transition-colors duration-[var(--duration-fast)] hover:text-[var(--color-brand-cyan-bright)] hover:underline"
+                  className="inline-flex min-h-11 items-center gap-1.5 text-sm text-[var(--color-text-body)] underline-offset-4 transition-colors duration-[var(--duration-fast)] hover:text-[var(--color-brand-cyan-bright)] hover:underline"
                 >
                   {link.label}
                   <ArrowUpRight aria-hidden className="size-3.5" />

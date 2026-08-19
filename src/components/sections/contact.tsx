@@ -29,7 +29,15 @@ export function Contact() {
         </Reveal>
 
         <div className="mt-12 grid gap-8 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
-          <div className="flex flex-col gap-4">
+          {/* `min-w-0` on the column, not only on the grid.
+              A grid item's automatic minimum size is its content's min-content
+              width, and the email address is `truncate`d — which means
+              `white-space: nowrap`, which means its min-content is the whole
+              address. At 320 px that pushed this column to 330 px inside a
+              280 px grid area and gave the entire document a horizontal
+              scrollbar. `minmax(0, …)` on the template fixes the *track*; the
+              item needs telling separately. */}
+          <div className="flex min-w-0 flex-col gap-4">
             <Reveal>
               <Card className="flex items-start gap-4 p-5">
                 <Icon>
@@ -39,7 +47,7 @@ export function Contact() {
                   <p className="text-sm text-[var(--color-text-faint)]">Email</p>
                   <a
                     href={`mailto:${site.email}`}
-                    className="mt-1 block truncate font-medium text-[var(--color-text-strong)] underline-offset-4 hover:underline"
+                    className="mt-0.5 flex min-h-11 items-center truncate font-medium text-[var(--color-text-strong)] underline-offset-4 hover:underline"
                   >
                     {site.email}
                   </a>
@@ -80,7 +88,7 @@ export function Contact() {
             </Reveal>
 
             <Reveal delay={0.21}>
-              <ul className="mt-2 flex flex-col gap-3">
+              <ul className="mt-2 flex flex-col gap-1">
                 {site.socials
                   .filter((social) => social.icon !== 'mail')
                   .map((social) => (
@@ -89,7 +97,7 @@ export function Contact() {
                         href={social.href}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm text-[var(--color-text-muted)] underline-offset-4 transition-colors duration-[var(--duration-fast)] hover:text-[var(--color-text-strong)] hover:underline"
+                        className="inline-flex min-h-11 items-center text-sm text-[var(--color-text-muted)] underline-offset-4 transition-colors duration-[var(--duration-fast)] hover:text-[var(--color-text-strong)] hover:underline"
                       >
                         {social.label} — {social.handle}
                         <span className="sr-only"> (opens in a new tab)</span>

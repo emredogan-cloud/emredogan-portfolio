@@ -60,7 +60,7 @@ export function Credentials() {
                   href={credential.verifyUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-5 inline-flex items-center gap-1.5 text-sm text-[var(--color-text-body)] underline-offset-4 transition-colors duration-[var(--duration-fast)] hover:text-[var(--color-brand-cyan-bright)] hover:underline"
+                  className="mt-3 inline-flex min-h-11 items-center gap-1.5 text-sm text-[var(--color-text-body)] underline-offset-4 transition-colors duration-[var(--duration-fast)] hover:text-[var(--color-brand-cyan-bright)] hover:underline"
                 >
                   {credential.kind === 'shipped' ? 'See it' : 'Exam details'}
                   <ArrowUpRight aria-hidden className="size-3.5" />

@@ -31,7 +31,14 @@ export default defineConfig({
     toHaveScreenshot: {
       // The animated background is seeded and frozen in visual tests, but
       // font hinting still differs by a hair between runs.
-      maxDiffPixelRatio: 0.01,
+      //
+      // 0.003, down from 0.01. On a 768×1400 dark screenshot, 1 % is eleven
+      // thousand pixels — enough to absorb the entire navigation island
+      // appearing, disappearing or moving, which is exactly what it did:
+      // baselines containing a stale header kept passing because only its text
+      // and its one bright button cleared the per-pixel threshold. A tolerance
+      // that can swallow a whole UI element is not a tolerance, it is a hole.
+      maxDiffPixelRatio: 0.003,
       animations: 'disabled',
       caret: 'hide',
     },
