@@ -260,11 +260,28 @@
    * In this mode the reader's palette is supposed to win outright, so text is
    * `CanvasText` and links are `LinkText`, full stop.
    */
+  /*
+   * Each pair is a concrete colour followed by the system keyword.
+   *
+   * An engine that implements the keyword takes the second declaration and the
+   * reader's own palette wins, which is the point of this mode. An engine that
+   * does not — WebKit's emulation resolves `Canvas` to silver while leaving
+   * `color` untouched, producing #ffffff on #c0c0c0, **1.81:1**, 163 axe nodes
+   * — drops it and keeps the first, which is guaranteed readable. Neither
+   * outcome is white on silver.
+   */
+  body {
+    background-color: #ffffff;
+    background-color: Canvas;
+  }
+
   body :not(a):not(svg):not(svg *) {
+    color: #000000;
     color: CanvasText;
   }
 
   a {
+    color: #00006e;
     color: LinkText;
   }
 
@@ -279,10 +296,13 @@
      keeps it a button rather than a run of underlined text. */
   a[class*='bg-[linear-gradient'],
   button[class*='bg-[linear-gradient'] {
-    border: 1px solid ButtonText !important;
+    border: 1px solid #000000 !important;
+    border-color: ButtonText !important;
+    color: #000000 !important;
     color: ButtonText !important;
-    forced-color-adjust: none;
+    background: #ffffff !important;
     background: ButtonFace !important;
+    forced-color-adjust: none;
   }
 
   /* Cards and inputs need their edges back: `color-mix` borders resolve to
